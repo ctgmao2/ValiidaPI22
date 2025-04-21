@@ -11,7 +11,19 @@ type AccessibilityContextType = {
   toggleReadAloud: () => void;
 };
 
-const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
+// Default values for the context
+const defaultAccessibilityContext: AccessibilityContextType = {
+  isAccessibilityPanelOpen: false,
+  toggleAccessibilityPanel: () => {},
+  isHighContrast: false,
+  toggleHighContrast: () => {},
+  isLargeText: false,
+  toggleLargeText: () => {},
+  isReadAloud: false,
+  toggleReadAloud: () => {},
+};
+
+const AccessibilityContext = createContext<AccessibilityContextType>(defaultAccessibilityContext);
 
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
   const [isAccessibilityPanelOpen, setIsAccessibilityPanelOpen] = useState(false);
@@ -73,9 +85,5 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
 }
 
 export function useAccessibility() {
-  const context = useContext(AccessibilityContext);
-  if (context === undefined) {
-    throw new Error('useAccessibility must be used within an AccessibilityProvider');
-  }
-  return context;
+  return useContext(AccessibilityContext);
 }

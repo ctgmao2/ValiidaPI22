@@ -13,7 +13,6 @@ import Header from "@/components/layout/header";
 import MobileNav from "@/components/layout/mobile-nav";
 import Footer from "@/components/layout/footer";
 import AccessibilityControls from "@/components/shared/accessibility-controls";
-import { AccessibilityProvider } from "./hooks/use-accessibility";
 
 function Router() {
   return (
@@ -30,20 +29,18 @@ function Router() {
 
 function App() {
   return (
-    <AccessibilityProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <div className="min-h-screen flex flex-col">
-            <Toaster />
-            <AccessibilityControls />
-            <Header />
-            <MobileNav />
-            <Router />
-            <Footer />
-          </div>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </AccessibilityProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <div className="min-h-screen flex flex-col">
+          <Toaster />
+          <AccessibilityControls />
+          <Header />
+          <MobileNav />
+          <Router />
+          <Footer />
+        </div>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 
