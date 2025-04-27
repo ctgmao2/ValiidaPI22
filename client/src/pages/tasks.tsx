@@ -374,10 +374,10 @@ export default function Tasks() {
           </TableCell>
           
           <TableCell>
-            {task.progress !== undefined && task.progress > 0 ? (
+            {task.progress !== undefined && task.progress !== null && task.progress > 0 ? (
               <div className="w-full">
-                <Progress value={task.progress} max={100} className="h-2" />
-                <div className="text-xs text-right mt-1 text-neutral-500">{task.progress}%</div>
+                <Progress value={task.progress || 0} max={100} className="h-2" />
+                <div className="text-xs text-right mt-1 text-neutral-500">{task.progress || 0}%</div>
               </div>
             ) : (
               <span className="text-neutral-400">0%</span>
