@@ -20,6 +20,9 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Tasks() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
   const { data: tasks, isLoading: isLoadingTasks } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
   });
@@ -30,6 +33,35 @@ export default function Tasks() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredStatus, setFilteredStatus] = useState<string | null>(null);
+  
+  // Mutation for updating task status
+  const updateTaskStatus = useMutation({
+    mutationFn: async ({ taskId, status }: { taskId: number, status: string }) => {
+      return apiRequest(
+        "PATCH",
+        `/api/tasks/${taskId}/status`, 
+        { status }
+      );
+    },
+    onSuccess: () => {
+      // Invalidate queries to refetch the tasks
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities/recent'] });
+      toast({
+        title: "Task updated",
+        description: "The task status has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to update task:", error);
+      toast({
+        title: "Update failed",
+        description: "There was a problem updating the task status.",
+        variant: "destructive",
+      });
+    },
+  });
   
   // Filter tasks based on search term and status filter
   const filteredTasks = tasks?.filter(task => {
@@ -46,6 +78,10 @@ export default function Tasks() {
   const getUserById = (id: number | null | undefined) => {
     if (!id || !users) return null;
     return users.find(user => user.id === id);
+  };
+  
+  const handleStatusChange = (taskId: number, newStatus: string) => {
+    updateTaskStatus.mutate({ taskId, status: newStatus });
   };
   
   return (
@@ -169,7 +205,40 @@ export default function Tasks() {
                           {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-primary hover:text-primary-dark">Edit</button>
+                          <div className="flex items-center justify-end gap-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onSelect={() => handleStatusChange(task.id, "new")}
+                                  disabled={task.status === "new"}
+                                >
+                                  <AlertCircle className="mr-2 h-4 w-4 text-neutral-500" />
+                                  <span>Mark as New</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onSelect={() => handleStatusChange(task.id, "in-progress")}
+                                  disabled={task.status === "in-progress"}
+                                >
+                                  <Clock className="mr-2 h-4 w-4 text-warning" />
+                                  <span>Mark as In Progress</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onSelect={() => handleStatusChange(task.id, "completed")}
+                                  disabled={task.status === "completed"}
+                                >
+                                  <CheckCircle className="mr-2 h-4 w-4 text-success" />
+                                  <span>Mark as Completed</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <button className="text-primary hover:text-primary-dark">Edit</button>
+                          </div>
                         </td>
                       </tr>
                     );
