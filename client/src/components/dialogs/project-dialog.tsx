@@ -29,7 +29,7 @@ export function ProjectDialog({
 
   // If editing, fetch the current project data
   const { data: projectData } = useQuery({
-    queryKey: projectId ? [`/api/projects/${projectId}`] : null,
+    queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
     enabled: mode === "edit" && !!projectId,
   });
 

@@ -6,13 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Plus, FolderTree, ChevronRight, ChevronDown, Users, CalendarDays, 
-  FileText, Clock, Settings, Layers, ExternalLink, Activity
+  FileText, Clock, Settings, Layers, ExternalLink, Activity, Edit, MoreHorizontal,
+  Trash2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { ProjectDialog } from "@/components/dialogs/project-dialog";
+import { ConfirmDeleteDialog } from "@/components/dialogs/confirm-delete-dialog";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProjectWithSubprojects extends Project {
   subprojects?: ProjectWithSubprojects[];
@@ -118,13 +127,48 @@ export default function Projects() {
                   </CardDescription>
                 </div>
               </div>
-              <div>
+              <div className="flex items-center space-x-2">
                 {hasSubprojects && (
                   <Badge variant="outline" className="flex items-center">
                     <FolderTree className="h-3 w-3 mr-1" />
                     {project.subprojects?.length} subproject{project.subprojects!.length !== 1 ? 's' : ''}
                   </Badge>
                 )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <ProjectDialog 
+                        mode="edit" 
+                        projectId={project.id}
+                        trigger={
+                          <div className="flex items-center cursor-pointer w-full">
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Edit</span>
+                          </div>
+                        }
+                      />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <ConfirmDeleteDialog
+                        resourceType="project"
+                        resourceId={project.id}
+                        resourceName={project.name}
+                        userId={1} // Typically this would come from auth context
+                        trigger={
+                          <div className="flex items-center cursor-pointer w-full text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete</span>
+                          </div>
+                        }
+                      />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </CardHeader>
@@ -189,10 +233,15 @@ export default function Projects() {
                 <FolderTree className="-ml-1 mr-2 h-5 w-5" />
                 Import
               </Button>
-              <Button>
-                <Plus className="-ml-1 mr-2 h-5 w-5" />
-                New Project
-              </Button>
+              <ProjectDialog
+                mode="create"
+                trigger={
+                  <Button>
+                    <Plus className="-ml-1 mr-2 h-5 w-5" />
+                    New Project
+                  </Button>
+                }
+              />
             </div>
           </div>
         </div>
@@ -240,10 +289,15 @@ export default function Projects() {
                   }
                 </p>
                 <div className="mt-6">
-                  <Button>
-                    <Plus className="-ml-1 mr-2 h-5 w-5" />
-                    New Project
-                  </Button>
+                  <ProjectDialog
+                    mode="create"
+                    trigger={
+                      <Button>
+                        <Plus className="-ml-1 mr-2 h-5 w-5" />
+                        New Project
+                      </Button>
+                    }
+                  />
                 </div>
               </div>
             )}
