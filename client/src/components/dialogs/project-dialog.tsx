@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProjectForm } from "@/components/forms/project-form";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -27,32 +27,55 @@ export function ProjectDialog({
   defaultValues,
 }: ProjectDialogProps) {
   const [open, setOpen] = useState(false);
-  const [key, setKey] = useState(0); // Add key to force re-render of form
+  const [formKey, setFormKey] = useState(0);
+  const [formReady, setFormReady] = useState(mode === "create");
 
-  // If editing, fetch the current project data
+  // Fetch project data if in edit mode
   const { data: projectData, isLoading } = useQuery<Project>({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
-    enabled: mode === "edit" && !!projectId,
+    enabled: mode === "edit" && !!projectId && open,
   });
 
-  // Show loading in edit mode until data is available
-  const isReady = mode === "create" || (mode === "edit" && !isLoading);
-  
-  // Prepare form default values based on mode
-  const formDefaultValues = mode === "edit" && projectData 
-    ? projectData 
+  // Update formReady state when loading completes or mode is create
+  useEffect(() => {
+    if (mode === "create") {
+      setFormReady(true);
+    } else if (mode === "edit") {
+      setFormReady(!isLoading && !!projectData);
+    }
+  }, [mode, isLoading, projectData]);
+
+  // When dialog opens or closes
+  const handleOpenChange = (newOpenState: boolean) => {
+    // Reset form ready state when dialog closes
+    if (!newOpenState && open) {
+      setFormReady(mode === "create");
+    }
+    
+    // Force form to remount when dialog opens
+    if (newOpenState && !open) {
+      setFormKey(prev => prev + 1);
+      // For edit mode, we'll wait for data to load
+      setFormReady(mode === "create");
+    }
+    
+    setOpen(newOpenState);
+  };
+
+  // Prepare the form values (with defaults for empty fields)
+  const formValues = mode === "edit" && projectData
+    ? { 
+        ...projectData
+      }
     : defaultValues || {};
 
-  // Handle dialog open state changes
-  const handleOpenChange = (newOpenState: boolean) => {
-    if (newOpenState !== open) {
-      setOpen(newOpenState);
-      // Increment key when reopening to force form reset
-      if (newOpenState) {
-        setKey(prev => prev + 1);
-      }
+  // Simple console debug
+  useEffect(() => {
+    if (open) {
+      console.log(`ProjectDialog: mode=${mode}, projectId=${projectId}, formReady=${formReady}`);
+      console.log("FormValues:", formValues);
     }
-  };
+  }, [open, formReady, projectData, mode, projectId, formValues]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -75,13 +98,14 @@ export function ProjectDialog({
               : "Update the project details using the form below."}
           </DialogDescription>
         </DialogHeader>
+        
         <div className="py-4">
-          {isReady ? (
+          {formReady ? (
             <ProjectForm
-              key={key} // Force re-render when dialog is opened
+              key={formKey}
               mode={mode}
               projectId={projectId}
-              defaultValues={formDefaultValues}
+              defaultValues={formValues}
               onSuccess={() => setOpen(false)}
             />
           ) : (

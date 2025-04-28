@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { TaskForm } from "@/components/forms/task-form";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -27,37 +27,58 @@ export function TaskDialog({
   defaultValues,
 }: TaskDialogProps) {
   const [open, setOpen] = useState(false);
-  const [key, setKey] = useState(0); // Add key to force re-render of form
+  const [formKey, setFormKey] = useState(0); 
+  const [formReady, setFormReady] = useState(mode === "create");
 
-  // If editing, fetch the current task data
+  // Fetch task data if in edit mode
   const { data: taskData, isLoading } = useQuery<Task>({
     queryKey: taskId ? ['/api/tasks', taskId] : ['disabled-query'],
-    enabled: mode === "edit" && !!taskId,
+    enabled: mode === "edit" && !!taskId && open,
   });
 
-  // Show loading in edit mode until data is available
-  const isReady = mode === "create" || (mode === "edit" && !isLoading);
-  
-  // Prepare form default values based on mode
-  const formDefaultValues = mode === "edit" && taskData 
-    ? {
+  // Update formReady state when loading completes or mode is create
+  useEffect(() => {
+    if (mode === "create") {
+      setFormReady(true);
+    } else if (mode === "edit") {
+      setFormReady(!isLoading && !!taskData);
+    }
+  }, [mode, isLoading, taskData]);
+
+  // When dialog opens or closes
+  const handleOpenChange = (newOpenState: boolean) => {
+    // Reset form ready state when dialog closes
+    if (!newOpenState && open) {
+      setFormReady(mode === "create");
+    }
+    
+    // Force form to remount when dialog opens
+    if (newOpenState && !open) {
+      setFormKey(prev => prev + 1);
+      // For edit mode, we'll wait for data to load
+      setFormReady(mode === "create");
+    }
+    
+    setOpen(newOpenState);
+  };
+
+  // Prepare the form values (with defaults for empty fields)
+  const formValues = mode === "edit" && taskData
+    ? { 
         ...taskData,
         // Convert string dates to Date objects for the form
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-        startDate: taskData.startDate ? new Date(taskData.startDate) : null,
+        startDate: taskData.startDate ? new Date(taskData.startDate) : null
       }
-    : defaultValues || {} as Record<string, any>; // Type assertion to avoid TS errors
+    : defaultValues || {} as Record<string, any>;
 
-  // Handle dialog open state changes
-  const handleOpenChange = (newOpenState: boolean) => {
-    if (newOpenState !== open) {
-      setOpen(newOpenState);
-      // Increment key when reopening to force form reset
-      if (newOpenState) {
-        setKey(prev => prev + 1);
-      }
+  // Simple console debug
+  useEffect(() => {
+    if (open) {
+      console.log(`TaskDialog: mode=${mode}, taskId=${taskId}, formReady=${formReady}`);
+      console.log("FormValues:", formValues);
     }
-  };
+  }, [open, formReady, taskData, mode, taskId, formValues]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -81,12 +102,12 @@ export function TaskDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          {isReady ? (
+          {formReady ? (
             <TaskForm
-              key={key} // Force re-render when dialog is opened
+              key={formKey}
               mode={mode}
               taskId={taskId}
-              defaultValues={formDefaultValues}
+              defaultValues={formValues}
               onSuccess={() => setOpen(false)}
             />
           ) : (
