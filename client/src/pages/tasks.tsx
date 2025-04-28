@@ -637,12 +637,12 @@ export default function Tasks() {
               />
             </div>
             
-            <Select value={filteredProject?.toString() || ""} onValueChange={(v) => setFilteredProject(v ? parseInt(v) : null)}>
+            <Select value={filteredProject?.toString() || "all"} onValueChange={(v) => setFilteredProject(v !== "all" ? parseInt(v) : null)}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Projects</SelectItem>
+                <SelectItem value="all">All Projects</SelectItem>
                 {projects?.map((project) => (
                   <SelectItem key={project.id} value={project.id.toString()}>
                     {project.name}
