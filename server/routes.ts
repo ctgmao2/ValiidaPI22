@@ -98,7 +98,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/projects", async (req: Request, res: Response) => {
     try {
-      const projectData = insertProjectSchema.parse(req.body);
+      // Process any date fields that might be in the project data
+      const preprocessedData = {
+        ...req.body,
+        // Add any date fields that might need conversion here
+      };
+      
+      const projectData = insertProjectSchema.parse(preprocessedData);
       const project = await storage.createProject(projectData);
       
       // Create an activity for project creation
@@ -116,6 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
+      console.error("Project creation error:", error);
       res.status(400).json({ message: "Invalid project data" });
     }
   });
@@ -127,8 +134,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Process any date fields that might be in the project data
+      const preprocessedData = {
+        ...req.body,
+        // Add any date fields that might need conversion here
+      };
+      
       // Allow partial updates by picking only the fields that are provided
-      const projectData = insertProjectSchema.partial().parse(req.body);
+      const projectData = insertProjectSchema.partial().parse(preprocessedData);
       const project = await storage.updateProject(id, projectData);
       
       if (!project) {
