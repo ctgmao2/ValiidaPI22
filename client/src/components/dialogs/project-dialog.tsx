@@ -28,15 +28,18 @@ export function ProjectDialog({
   const [open, setOpen] = useState(false);
 
   // If editing, fetch the current project data
-  const { data: projectData } = useQuery({
+  const { data: projectData, isLoading } = useQuery({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
     enabled: mode === "edit" && !!projectId,
   });
 
+  // Show loading in edit mode until data is available
+  const isReady = mode === "create" || (mode === "edit" && (projectData || isLoading === false));
+  
   // Prepare form default values based on mode
   const formDefaultValues = mode === "edit" && projectData 
     ? projectData 
-    : defaultValues;
+    : defaultValues || {};
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -60,12 +63,18 @@ export function ProjectDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <ProjectForm
-            mode={mode}
-            projectId={projectId}
-            defaultValues={formDefaultValues}
-            onSuccess={() => setOpen(false)}
-          />
+          {isReady ? (
+            <ProjectForm
+              mode={mode}
+              projectId={projectId}
+              defaultValues={formDefaultValues}
+              onSuccess={() => setOpen(false)}
+            />
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">Loading project data...</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

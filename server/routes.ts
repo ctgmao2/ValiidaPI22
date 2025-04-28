@@ -217,7 +217,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/tasks", async (req: Request, res: Response) => {
     try {
-      const taskData = insertTaskSchema.parse(req.body);
+      // Pre-process date fields to handle ISO strings
+      const preprocessedData = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null
+      };
+      
+      const taskData = insertTaskSchema.parse(preprocessedData);
       const task = await storage.createTask(taskData);
       
       // Create an activity for task creation if assignee is provided
@@ -236,6 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
+      console.error("Task creation error:", error);
       res.status(400).json({ message: "Invalid task data" });
     }
   });
@@ -247,8 +255,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Pre-process date fields to handle ISO strings
+      const preprocessedData = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined
+      };
+      
       // Allow partial updates by picking only the fields that are provided
-      const taskData = insertTaskSchema.partial().parse(req.body);
+      const taskData = insertTaskSchema.partial().parse(preprocessedData);
       const task = await storage.updateTask(id, taskData);
       
       if (!task) {
