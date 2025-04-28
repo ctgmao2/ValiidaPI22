@@ -26,6 +26,25 @@ export class DbStorage implements IStorage {
     const result = await db.insert(users).values(user).returning();
     return result[0];
   }
+  
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+      
+    return result[0];
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
+      
+    return result.length > 0;
+  }
 
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users);
@@ -40,6 +59,34 @@ export class DbStorage implements IStorage {
   async getProject(id: number): Promise<Project | undefined> {
     const result = await db.select().from(projects).where(eq(projects.id, id));
     return result[0];
+  }
+  
+  async updateProject(id: number, projectData: Partial<InsertProject>): Promise<Project | undefined> {
+    const result = await db
+      .update(projects)
+      .set({ 
+        ...projectData,
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, id))
+      .returning();
+      
+    return result[0];
+  }
+  
+  async deleteProject(id: number): Promise<boolean> {
+    // Delete all related tasks first
+    await db
+      .delete(tasks)
+      .where(eq(tasks.projectId, id));
+      
+    // Then delete the project
+    const result = await db
+      .delete(projects)
+      .where(eq(projects.id, id))
+      .returning();
+      
+    return result.length > 0;
   }
 
   async getAllProjects(): Promise<Project[]> {
@@ -56,6 +103,41 @@ export class DbStorage implements IStorage {
     const result = await db.select().from(tasks).where(eq(tasks.id, id));
     return result[0];
   }
+  
+  async updateTask(id: number, taskData: Partial<InsertTask>): Promise<Task | undefined> {
+    const result = await db
+      .update(tasks)
+      .set({ 
+        ...taskData,
+        updatedAt: new Date()
+      })
+      .where(eq(tasks.id, id))
+      .returning();
+      
+    // Create an activity record for this update
+    await db.insert(activities).values({
+      type: ActivityType.TASK_UPDATED,
+      description: `Task updated: ${result[0]?.title || 'Unknown task'}`,
+      taskId: id
+    });
+      
+    return result[0];
+  }
+  
+  async deleteTask(id: number): Promise<boolean> {
+    // Delete any subtasks first
+    await db
+      .delete(tasks)
+      .where(eq(tasks.parentTaskId, id));
+      
+    // Then delete the task
+    const result = await db
+      .delete(tasks)
+      .where(eq(tasks.id, id))
+      .returning();
+      
+    return result.length > 0;
+  }
 
   async getAllTasks(): Promise<Task[]> {
     return db.select().from(tasks);
@@ -68,7 +150,10 @@ export class DbStorage implements IStorage {
   async updateTaskStatus(id: number, status: string): Promise<Task | undefined> {
     const result = await db
       .update(tasks)
-      .set({ status })
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
       .where(eq(tasks.id, id))
       .returning();
     

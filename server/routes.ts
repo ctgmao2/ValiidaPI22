@@ -38,6 +38,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch("/api/users/:id", async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    try {
+      // Allow partial updates by picking only the fields that are provided
+      const userData = insertUserSchema.partial().parse(req.body);
+      const user = await storage.updateUser(id, userData);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  });
+  
+  app.delete("/api/users/:id", async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const deleted = await storage.deleteUser(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    res.status(204).end();
+  });
+  
   // Project routes
   app.get("/api/projects", async (req: Request, res: Response) => {
     const projects = await storage.getAllProjects();
@@ -62,6 +100,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const projectData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(projectData);
+      
+      // Create an activity for project creation
+      if (req.body.userId) {
+        await storage.createActivity({
+          type: "project-created",
+          description: `created a new project: ${project.name}`,
+          userId: req.body.userId,
+          projectId: project.id
+        });
+      }
+      
       res.status(201).json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -69,6 +118,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(400).json({ message: "Invalid project data" });
     }
+  });
+  
+  app.patch("/api/projects/:id", async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+    
+    try {
+      // Allow partial updates by picking only the fields that are provided
+      const projectData = insertProjectSchema.partial().parse(req.body);
+      const project = await storage.updateProject(id, projectData);
+      
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Create an activity for project update
+      if (req.body.userId) {
+        await storage.createActivity({
+          type: "project-updated",
+          description: `updated project: ${project.name}`,
+          userId: req.body.userId,
+          projectId: project.id
+        });
+      }
+      
+      res.json(project);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      res.status(400).json({ message: "Invalid project data" });
+    }
+  });
+  
+  app.delete("/api/projects/:id", async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid project ID" });
+    }
+    
+    // First get the project to log its name
+    const project = await storage.getProject(id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    
+    const deleted = await storage.deleteProject(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    
+    // Create an activity for project deletion
+    if (req.body.userId) {
+      await storage.createActivity({
+        type: "project-updated",
+        description: `deleted project: ${project.name}`,
+        userId: req.body.userId
+      });
+    }
+    
+    res.status(204).end();
   });
   
   // Task routes
@@ -108,14 +220,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const taskData = insertTaskSchema.parse(req.body);
       const task = await storage.createTask(taskData);
       
-      // Create an activity for task creation
-      await storage.createActivity({
-        type: "task-created",
-        description: `created a new task ${task.title}`,
-        userId: taskData.assigneeId!,
-        taskId: task.id,
-        projectId: taskData.projectId!
-      });
+      // Create an activity for task creation if assignee is provided
+      if (taskData.assigneeId && taskData.projectId) {
+        await storage.createActivity({
+          type: "task-created",
+          description: `created a new task: ${task.title}`,
+          userId: taskData.assigneeId,
+          taskId: task.id,
+          projectId: taskData.projectId
+        });
+      }
       
       res.status(201).json(task);
     } catch (error) {
@@ -124,6 +238,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(400).json({ message: "Invalid task data" });
     }
+  });
+  
+  app.patch("/api/tasks/:id", async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid task ID" });
+    }
+    
+    try {
+      // Allow partial updates by picking only the fields that are provided
+      const taskData = insertTaskSchema.partial().parse(req.body);
+      const task = await storage.updateTask(id, taskData);
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Create an activity for task update if userId is provided
+      if (req.body.userId && task.projectId) {
+        const activityType = taskData.status === "completed" ? "task-completed" : "task-updated";
+        await storage.createActivity({
+          type: activityType,
+          description: taskData.status === "completed" 
+            ? `completed task: ${task.title}` 
+            : `updated task: ${task.title}`,
+          userId: req.body.userId,
+          taskId: task.id,
+          projectId: task.projectId
+        });
+      }
+      
+      res.json(task);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      res.status(400).json({ message: "Invalid task data" });
+    }
+  });
+  
+  app.delete("/api/tasks/:id", async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid task ID" });
+    }
+    
+    // First get the task to log its title
+    const task = await storage.getTask(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    
+    const deleted = await storage.deleteTask(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    
+    // Create an activity for task deletion
+    if (req.body.userId && task.projectId) {
+      await storage.createActivity({
+        type: "task-updated",
+        description: `deleted task: ${task.title}`,
+        userId: req.body.userId,
+        projectId: task.projectId
+      });
+    }
+    
+    res.status(204).end();
   });
   
   app.patch("/api/tasks/:id/status", async (req: Request, res: Response) => {

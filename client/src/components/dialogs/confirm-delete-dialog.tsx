@@ -10,87 +10,105 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+
+export type ResourceType = "task" | "project" | "user";
 
 interface ConfirmDeleteDialogProps {
-  entityType: "task" | "project" | "user" | "comment";
-  entityId: number;
-  entityName?: string;
+  resourceType: ResourceType;
+  resourceId: number;
+  resourceName: string;
+  onDeleteSuccess?: () => void;
   trigger?: ReactNode;
-  onSuccess?: () => void;
-  invalidateQueries?: string[];
+  queryKeysToInvalidate?: string[];
+  userId?: number;
 }
 
 export function ConfirmDeleteDialog({
-  entityType,
-  entityId,
-  entityName,
+  resourceType,
+  resourceId,
+  resourceName,
+  onDeleteSuccess,
   trigger,
-  onSuccess,
-  invalidateQueries = [],
+  queryKeysToInvalidate = [],
+  userId,
 }: ConfirmDeleteDialogProps) {
-  const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
 
-  // Create entity-type specific endpoint and messages
-  const endpoint = `/api/${entityType}s/${entityId}`;
-  const title = `Delete ${entityType[0].toUpperCase() + entityType.slice(1)}`;
-  const description = `Are you sure you want to delete this ${entityType}${
-    entityName ? `: "${entityName}"` : ""
-  }? This action cannot be undone.`;
-  const successMessage = `${entityType[0].toUpperCase() + entityType.slice(1)} deleted successfully.`;
+  // Map resource types to their API endpoints
+  const resourceEndpoints: Record<ResourceType, string> = {
+    task: `/api/tasks/${resourceId}`,
+    project: `/api/projects/${resourceId}`,
+    user: `/api/users/${resourceId}`,
+  };
 
-  // Default queries to invalidate based on entity type
-  const defaultQueriesToInvalidate = [
-    `/api/${entityType}s`,
-    "/api/dashboard/stats",
-    "/api/activities/recent",
-  ];
+  // Always invalidate these queries based on resource type
+  const defaultInvalidations: string[] = [];
+  if (resourceType === "task") {
+    defaultInvalidations.push("/api/tasks");
+    defaultInvalidations.push("/api/activities/recent");
+    defaultInvalidations.push("/api/dashboard/stats");
+    defaultInvalidations.push("/api/dashboard/due-soon");
+  } else if (resourceType === "project") {
+    defaultInvalidations.push("/api/projects");
+    defaultInvalidations.push("/api/tasks"); // Invalidate tasks as they might be affected
+    defaultInvalidations.push("/api/activities/recent");
+    defaultInvalidations.push("/api/dashboard/stats");
+  } else if (resourceType === "user") {
+    defaultInvalidations.push("/api/users");
+  }
 
-  // Combine default queries with any additional ones
-  const queriesToInvalidate = [...new Set([...defaultQueriesToInvalidate, ...invalidateQueries])];
+  // Add any custom invalidations
+  defaultInvalidations.push(...queryKeysToInvalidate);
 
-  // Delete mutation
+  // Create delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("DELETE", endpoint);
+      return apiRequest("DELETE", resourceEndpoints[resourceType], userId ? { userId } : undefined);
     },
     onSuccess: () => {
       // Invalidate queries to refresh data
-      queriesToInvalidate.forEach(queryKey => {
+      defaultInvalidations.forEach(queryKey => {
         queryClient.invalidateQueries({ queryKey: [queryKey] });
       });
       
       toast({
-        title: "Deleted",
-        description: successMessage,
+        title: `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} deleted`,
+        description: `${resourceName} has been deleted successfully.`,
       });
       
+      // Close the dialog
       setOpen(false);
       
-      if (onSuccess) {
-        onSuccess();
+      // Call the success callback
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
       }
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to delete: ${error.message}`,
+        description: `Failed to delete ${resourceType}: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
+  const handleDelete = () => {
+    deleteMutation.mutate();
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         {trigger || (
-          <Button size="sm" variant="destructive">
+          <Button variant="destructive" size="sm">
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
@@ -98,19 +116,21 @@ export function ConfirmDeleteDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
           <AlertDialogDescription>
-            {description}
+            Are you sure you want to delete "{resourceName}"? This action cannot be undone.
+            {resourceType === "project" && 
+              " All tasks associated with this project will also be deleted."}
+            {resourceType === "task" && 
+              " Any subtasks will also be deleted."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction 
-            onClick={(e) => {
-              e.preventDefault();
-              deleteMutation.mutate();
-            }}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>

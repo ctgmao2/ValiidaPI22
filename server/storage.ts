@@ -12,16 +12,22 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   
   // Project operations
   createProject(project: InsertProject): Promise<Project>;
   getProject(id: number): Promise<Project | undefined>;
+  updateProject(id: number, projectData: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: number): Promise<boolean>;
   getAllProjects(): Promise<Project[]>;
   
   // Task operations
   createTask(task: InsertTask): Promise<Task>;
   getTask(id: number): Promise<Task | undefined>;
+  updateTask(id: number, taskData: Partial<InsertTask>): Promise<Task | undefined>;
+  deleteTask(id: number): Promise<boolean>;
   getAllTasks(): Promise<Task[]>;
   getTasksByProject(projectId: number): Promise<Task[]>;
   updateTaskStatus(id: number, status: string): Promise<Task | undefined>;
@@ -218,6 +224,22 @@ export class MemStorage implements IStorage {
     return newUser;
   }
   
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser: User = { 
+      ...user, 
+      ...userData 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    return this.users.delete(id);
+  }
+  
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
   }
@@ -230,7 +252,13 @@ export class MemStorage implements IStorage {
       ...project, 
       id, 
       createdAt: now, 
-      updatedAt: now 
+      updatedAt: now,
+      status: project.status || 'active',
+      description: project.description || null,
+      icon: project.icon || null,
+      parentId: project.parentId || null,
+      isPublic: project.isPublic ?? true,
+      customFields: project.customFields || null
     };
     this.projects.set(id, newProject);
     return newProject;
@@ -238,6 +266,27 @@ export class MemStorage implements IStorage {
   
   async getProject(id: number): Promise<Project | undefined> {
     return this.projects.get(id);
+  }
+  
+  async updateProject(id: number, projectData: Partial<InsertProject>): Promise<Project | undefined> {
+    const project = this.projects.get(id);
+    if (!project) return undefined;
+    
+    const updatedProject: Project = { 
+      ...project, 
+      ...projectData,
+      updatedAt: new Date() 
+    };
+    this.projects.set(id, updatedProject);
+    return updatedProject;
+  }
+  
+  async deleteProject(id: number): Promise<boolean> {
+    // Also delete related tasks
+    const projectTasks = await this.getTasksByProject(id);
+    projectTasks.forEach(task => this.tasks.delete(task.id));
+    
+    return this.projects.delete(id);
   }
   
   async getAllProjects(): Promise<Project[]> {
@@ -252,7 +301,21 @@ export class MemStorage implements IStorage {
       ...task, 
       id, 
       createdAt: now, 
-      updatedAt: now 
+      updatedAt: now,
+      status: task.status || 'new',
+      priority: task.priority || 'medium',
+      description: task.description || null,
+      progress: task.progress || 0,
+      estimatedHours: task.estimatedHours || null,
+      spentHours: task.spentHours || 0,
+      dueDate: task.dueDate || null,
+      startDate: task.startDate || null,
+      taskTypeId: task.taskTypeId || null,
+      projectId: task.projectId || null,
+      assigneeId: task.assigneeId || null,
+      reporterId: task.reporterId || null,
+      parentTaskId: task.parentTaskId || null,
+      customFields: task.customFields || null
     };
     this.tasks.set(id, newTask);
     return newTask;
@@ -260,6 +323,29 @@ export class MemStorage implements IStorage {
   
   async getTask(id: number): Promise<Task | undefined> {
     return this.tasks.get(id);
+  }
+  
+  async updateTask(id: number, taskData: Partial<InsertTask>): Promise<Task | undefined> {
+    const task = this.tasks.get(id);
+    if (!task) return undefined;
+    
+    const updatedTask: Task = { 
+      ...task, 
+      ...taskData,
+      updatedAt: new Date() 
+    };
+    this.tasks.set(id, updatedTask);
+    return updatedTask;
+  }
+  
+  async deleteTask(id: number): Promise<boolean> {
+    // Check for subtasks and delete them first
+    const subtasks = Array.from(this.tasks.values())
+      .filter(task => task.parentTaskId === id);
+    
+    subtasks.forEach(subtask => this.tasks.delete(subtask.id));
+    
+    return this.tasks.delete(id);
   }
   
   async getAllTasks(): Promise<Task[]> {
