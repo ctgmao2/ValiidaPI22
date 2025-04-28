@@ -11,6 +11,7 @@ import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import type { Task } from "@shared/schema";
 
 interface TaskDialogProps {
   mode: "create" | "edit";
@@ -28,19 +29,23 @@ export function TaskDialog({
   const [open, setOpen] = useState(false);
 
   // If editing, fetch the current task data
-  const { data: taskData } = useQuery({
+  const { data: taskData, isLoading } = useQuery<Task>({
     queryKey: taskId ? ['/api/tasks', taskId] : ['disabled-query'],
     enabled: mode === "edit" && !!taskId,
   });
 
+  // Show loading in edit mode until data is available
+  const isReady = mode === "create" || (mode === "edit" && !isLoading);
+  
   // Prepare form default values based on mode
   const formDefaultValues = mode === "edit" && taskData 
     ? {
         ...taskData,
         // Convert string dates to Date objects for the form
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
+        startDate: taskData.startDate ? new Date(taskData.startDate) : null,
       }
-    : defaultValues;
+    : defaultValues || {} as Record<string, any>; // Type assertion to avoid TS errors
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -64,12 +69,18 @@ export function TaskDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <TaskForm
-            mode={mode}
-            taskId={taskId}
-            defaultValues={formDefaultValues}
-            onSuccess={() => setOpen(false)}
-          />
+          {isReady ? (
+            <TaskForm
+              mode={mode}
+              taskId={taskId}
+              defaultValues={formDefaultValues}
+              onSuccess={() => setOpen(false)}
+            />
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">Loading task data...</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -11,6 +11,7 @@ import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import type { Project } from "@shared/schema";
 
 interface ProjectDialogProps {
   mode: "create" | "edit";
@@ -28,13 +29,13 @@ export function ProjectDialog({
   const [open, setOpen] = useState(false);
 
   // If editing, fetch the current project data
-  const { data: projectData, isLoading } = useQuery({
+  const { data: projectData, isLoading } = useQuery<Project>({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
     enabled: mode === "edit" && !!projectId,
   });
 
   // Show loading in edit mode until data is available
-  const isReady = mode === "create" || (mode === "edit" && (projectData || isLoading === false));
+  const isReady = mode === "create" || (mode === "edit" && !isLoading);
   
   // Prepare form default values based on mode
   const formDefaultValues = mode === "edit" && projectData 
