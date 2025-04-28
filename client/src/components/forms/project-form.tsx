@@ -58,9 +58,9 @@ export function ProjectForm({
   });
 
   // Filter out the current project (if editing) from parent options to prevent circular references
-  const parentProjectOptions = projects?.filter(
-    (project: any) => mode !== "edit" || project.id !== projectId
-  ) || [];
+  const parentProjectOptions = Array.isArray(projects) 
+    ? projects.filter((project: any) => mode !== "edit" || project.id !== projectId) 
+    : [];
 
   // Form setup
   const form = useForm<ProjectFormValues>({
@@ -223,7 +223,7 @@ export function ProjectForm({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>
-                    {parentProjectOptions.map((project: any) => (
+                    {Array.isArray(parentProjectOptions) && parentProjectOptions.map((project: any) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
                         {project.name}
                       </SelectItem>

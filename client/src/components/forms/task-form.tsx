@@ -281,7 +281,7 @@ export function TaskForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {projects?.map((project: any) => (
+                    {Array.isArray(projects) && projects.map((project: any) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
                         {project.name}
                       </SelectItem>
