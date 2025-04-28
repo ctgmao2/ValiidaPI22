@@ -90,11 +90,11 @@ export function TaskForm({
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: async (data: TaskFormValues) => {
-      // Format data for API
+      // Format data for API - handle both date objects and strings
       const taskData = {
         ...data,
-        // Convert to ISO string if date is present
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+        dueDate: data.dueDate ? (data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate) : null,
+        startDate: data.startDate ? (data.startDate instanceof Date ? data.startDate.toISOString() : data.startDate) : null,
       };
       
       return apiRequest("POST", "/api/tasks", taskData);
@@ -127,11 +127,11 @@ export function TaskForm({
   // Update task mutation
   const updateTaskMutation = useMutation({
     mutationFn: async (data: TaskFormValues & { id: number }) => {
-      // Format data for API
+      // Format data for API - handle both date objects and strings
       const taskData = {
         ...data,
-        // Convert to ISO string if date is present
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+        dueDate: data.dueDate ? (data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate) : null,
+        startDate: data.startDate ? (data.startDate instanceof Date ? data.startDate.toISOString() : data.startDate) : null,
       };
       
       return apiRequest("PATCH", `/api/tasks/${data.id}`, taskData);
