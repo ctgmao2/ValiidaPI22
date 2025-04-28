@@ -27,6 +27,7 @@ export function TaskDialog({
   defaultValues,
 }: TaskDialogProps) {
   const [open, setOpen] = useState(false);
+  const [key, setKey] = useState(0); // Add key to force re-render of form
 
   // If editing, fetch the current task data
   const { data: taskData, isLoading } = useQuery<Task>({
@@ -47,8 +48,19 @@ export function TaskDialog({
       }
     : defaultValues || {} as Record<string, any>; // Type assertion to avoid TS errors
 
+  // Handle dialog open state changes
+  const handleOpenChange = (newOpenState: boolean) => {
+    if (newOpenState !== open) {
+      setOpen(newOpenState);
+      // Increment key when reopening to force form reset
+      if (newOpenState) {
+        setKey(prev => prev + 1);
+      }
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button size="sm">
@@ -71,6 +83,7 @@ export function TaskDialog({
         <div className="py-4">
           {isReady ? (
             <TaskForm
+              key={key} // Force re-render when dialog is opened
               mode={mode}
               taskId={taskId}
               defaultValues={formDefaultValues}
