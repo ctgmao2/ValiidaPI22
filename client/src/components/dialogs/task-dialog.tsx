@@ -29,7 +29,7 @@ export function TaskDialog({
 
   // If editing, fetch the current task data
   const { data: taskData } = useQuery({
-    queryKey: taskId ? [`/api/tasks/${taskId}`] : null,
+    queryKey: taskId ? ['/api/tasks', taskId] : ['disabled-query'],
     enabled: mode === "edit" && !!taskId,
   });
 

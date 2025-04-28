@@ -8,7 +8,7 @@ import {
   Filter, Plus, Search, MoreHorizontal, Link2, Clock, CalendarDays, 
   Link, AlertCircle, Layers, UserCircle2, MessageCircle, FileText,
   ArrowUpRight, ChevronDown, ChevronUp, Star, CheckCircle2, ListFilter,
-  MoreVertical, CheckCircle
+  MoreVertical, CheckCircle, Edit, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -52,6 +52,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { TaskDialog } from "@/components/dialogs/task-dialog";
+import { ConfirmDeleteDialog } from "@/components/dialogs/confirm-delete-dialog";
 
 // Define interfaces for enhanced task data
 interface TaskWithRelations extends Task {
@@ -540,10 +542,15 @@ export default function Tasks() {
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {showClosedTasks ? "Hide Closed" : "Show Closed"}
               </Button>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Task
-              </Button>
+              <TaskDialog
+                mode="create"
+                trigger={
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Task
+                  </Button>
+                }
+              />
             </div>
           </div>
           
