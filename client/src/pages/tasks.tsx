@@ -396,14 +396,39 @@ export default function Tasks() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem>View details</DropdownMenuItem>
-                <DropdownMenuItem>Edit task</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <TaskDialog 
+                    mode="edit" 
+                    taskId={task.id}
+                    trigger={
+                      <div className="flex items-center cursor-pointer w-full">
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Edit task</span>
+                      </div>
+                    }
+                  />
+                </DropdownMenuItem>
                 <DropdownMenuItem>Add comment</DropdownMenuItem>
                 <DropdownMenuItem>Log time</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Add subtask</DropdownMenuItem>
                 <DropdownMenuItem>Add related task</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <ConfirmDeleteDialog
+                    resourceType="task"
+                    resourceId={task.id}
+                    resourceName={task.title}
+                    userId={1} // Typically this would come from auth context
+                    queryKeysToInvalidate={['/api/tasks', '/api/dashboard/stats']}
+                    trigger={
+                      <div className="flex items-center cursor-pointer w-full text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </div>
+                    }
+                  />
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </TableCell>
@@ -459,7 +484,45 @@ export default function Tasks() {
                       <CardContent className="p-3">
                         <div className="mb-2 flex items-center justify-between">
                           <span className="text-xs text-neutral-500">#{task.id}</span>
-                          <PriorityBadge priority={task.priority as any} className="text-xs" />
+                          <div className="flex items-center gap-1">
+                            <PriorityBadge priority={task.priority as any} className="text-xs" />
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                  <MoreVertical className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                  <TaskDialog 
+                                    mode="edit" 
+                                    taskId={task.id}
+                                    trigger={
+                                      <div className="flex items-center cursor-pointer w-full">
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        <span>Edit task</span>
+                                      </div>
+                                    }
+                                  />
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <ConfirmDeleteDialog
+                                    resourceType="task"
+                                    resourceId={task.id}
+                                    resourceName={task.title}
+                                    userId={1} // Typically this would come from auth context
+                                    queryKeysToInvalidate={['/api/tasks', '/api/dashboard/stats']}
+                                    trigger={
+                                      <div className="flex items-center cursor-pointer w-full text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Delete</span>
+                                      </div>
+                                    }
+                                  />
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                         
                         <h3 className="font-medium line-clamp-2 mb-2">{task.title}</h3>
@@ -511,10 +574,16 @@ export default function Tasks() {
             </div>
             
             <div className="p-2 bg-neutral-100 rounded-b-md border border-t-0 border-neutral-200">
-              <Button variant="ghost" size="sm" className="w-full text-sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add task
-              </Button>
+              <TaskDialog
+                mode="create"
+                defaultValues={{ status: status }}
+                trigger={
+                  <Button variant="ghost" size="sm" className="w-full text-sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add task
+                  </Button>
+                }
+              />
             </div>
           </div>
         ))}
