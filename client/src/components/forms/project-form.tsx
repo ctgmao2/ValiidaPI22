@@ -213,8 +213,8 @@ export function ProjectForm({
               <FormItem>
                 <FormLabel>Parent Project</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? Number(value) : null)} 
-                  defaultValue={field.value?.toString()}
+                  onValueChange={(value) => field.onChange(value !== "none" ? Number(value) : null)} 
+                  defaultValue={field.value?.toString() || "none"}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -222,7 +222,7 @@ export function ProjectForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {Array.isArray(parentProjectOptions) && parentProjectOptions.map((project: any) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
                         {project.name}

@@ -9,95 +9,82 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
-export type ResourceType = "task" | "project" | "user";
+import { apiRequest } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 interface ConfirmDeleteDialogProps {
-  resourceType: ResourceType;
+  resourceType: "user" | "project" | "task" | "comment" | "team";
   resourceId: number;
   resourceName: string;
-  onDeleteSuccess?: () => void;
   trigger?: ReactNode;
-  queryKeysToInvalidate?: string[];
   userId?: number;
+  queryKeysToInvalidate: string[];
 }
 
 export function ConfirmDeleteDialog({
   resourceType,
   resourceId,
   resourceName,
-  onDeleteSuccess,
   trigger,
-  queryKeysToInvalidate = [],
   userId,
+  queryKeysToInvalidate,
 }: ConfirmDeleteDialogProps) {
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
 
-  // Map resource types to their API endpoints
-  const resourceEndpoints: Record<ResourceType, string> = {
-    task: `/api/tasks/${resourceId}`,
-    project: `/api/projects/${resourceId}`,
-    user: `/api/users/${resourceId}`,
+  // Create appropriate API endpoint based on resource type
+  const getApiEndpoint = () => {
+    switch (resourceType) {
+      case "user":
+        return `/api/users/${resourceId}`;
+      case "project":
+        return `/api/projects/${resourceId}`;
+      case "task":
+        return `/api/tasks/${resourceId}`;
+      case "comment":
+        return `/api/comments/${resourceId}`;
+      case "team":
+        return `/api/teams/${resourceId}`;
+      default:
+        return "";
+    }
   };
 
-  // Always invalidate these queries based on resource type
-  const defaultInvalidations: string[] = [];
-  if (resourceType === "task") {
-    defaultInvalidations.push("/api/tasks");
-    defaultInvalidations.push("/api/activities/recent");
-    defaultInvalidations.push("/api/dashboard/stats");
-    defaultInvalidations.push("/api/dashboard/due-soon");
-  } else if (resourceType === "project") {
-    defaultInvalidations.push("/api/projects");
-    defaultInvalidations.push("/api/tasks"); // Invalidate tasks as they might be affected
-    defaultInvalidations.push("/api/activities/recent");
-    defaultInvalidations.push("/api/dashboard/stats");
-  } else if (resourceType === "user") {
-    defaultInvalidations.push("/api/users");
-  }
-
-  // Add any custom invalidations
-  defaultInvalidations.push(...queryKeysToInvalidate);
-
-  // Create delete mutation
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("DELETE", resourceEndpoints[resourceType], userId ? { userId } : undefined);
+      const endpoint = getApiEndpoint();
+      if (!endpoint) throw new Error("Invalid resource type");
+      return apiRequest("DELETE", endpoint);
     },
     onSuccess: () => {
-      // Invalidate queries to refresh data
-      defaultInvalidations.forEach(queryKey => {
-        queryClient.invalidateQueries({ queryKey: [queryKey] });
+      // Invalidate relevant queries
+      queryKeysToInvalidate.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: [key] });
       });
+      
+      // Additional specific query invalidation
+      if (resourceType === "task" && userId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/users", userId, "tasks"] });
+      }
       
       toast({
-        title: `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} deleted`,
-        description: `${resourceName} has been deleted successfully.`,
+        title: "Success",
+        description: `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} deleted successfully.`,
       });
-      
-      // Close the dialog
       setOpen(false);
-      
-      // Call the success callback
-      if (onDeleteSuccess) {
-        onDeleteSuccess();
-      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: `Failed to delete ${resourceType}: ${error.message}`,
-        variant: "destructive",
+        description: error.message || `Failed to delete ${resourceType}.`,
+        variant: "destructive"
       });
-    },
+    }
   });
 
   const handleDelete = () => {
@@ -107,32 +94,32 @@ export function ConfirmDeleteDialog({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        {trigger || (
-          <Button variant="destructive" size="sm">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
-        )}
+        {trigger}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
+          <AlertDialogTitle>
+            Are you sure you want to delete this {resourceType}?
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{resourceName}"? This action cannot be undone.
-            {resourceType === "project" && 
-              " All tasks associated with this project will also be deleted."}
-            {resourceType === "task" && 
-              " Any subtasks will also be deleted."}
+            You are about to delete <strong>{resourceName}</strong>. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction 
-            onClick={handleDelete}
+            onClick={handleDelete} 
             disabled={deleteMutation.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            {deleteMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
