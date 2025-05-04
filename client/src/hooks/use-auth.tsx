@@ -47,24 +47,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // In a real app, this would call an API endpoint
-    
-    // Mock login for demonstration
-    if (username && password) {
-      // Simulate successful login with mock user data
-      const mockUser: User = {
-        id: 1,
-        username,
-        role: username === "admin" ? "admin" : "user",
-        fullName: username === "admin" ? "Administrator" : "Regular User",
-      };
-
-      setUser(mockUser);
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      if (!response.ok) {
+        console.error("Login failed with status:", response.status);
+        return false;
+      }
+      
+      const userData = await response.json();
+      setUser(userData);
+      localStorage.setItem("auth_user", JSON.stringify(userData));
       return true;
+    } catch (error) {
+      console.error("Login failed:", error);
+      return false;
     }
-    
-    return false;
   };
 
   const logout = () => {
