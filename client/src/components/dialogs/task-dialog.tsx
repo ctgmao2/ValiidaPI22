@@ -68,7 +68,18 @@ export function TaskDialog({
         ...taskData,
         // Convert string dates to Date objects for the form
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-        startDate: taskData.startDate ? new Date(taskData.startDate) : null
+        startDate: taskData.startDate ? new Date(taskData.startDate) : null,
+        // Handle optional fields with proper defaults
+        description: taskData.description || "",
+        estimatedHours: taskData.estimatedHours || null,
+        spentHours: taskData.spentHours || 0,
+        progress: taskData.progress || 0,
+        // Handle relations with proper null handling
+        taskTypeId: taskData.taskTypeId || null,
+        projectId: taskData.projectId || null,
+        assigneeId: taskData.assigneeId || null,
+        reporterId: taskData.reporterId || null,
+        parentTaskId: taskData.parentTaskId || null
       }
     : defaultValues || {} as Record<string, any>;
 

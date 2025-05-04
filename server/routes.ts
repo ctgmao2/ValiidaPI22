@@ -214,21 +214,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Project not found" });
     }
     
-    const deleted = await storage.deleteProject(id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-    
-    // Create an activity for project deletion
-    if (req.body.userId) {
-      await storage.createActivity({
-        type: "project-updated",
-        description: `deleted project: ${project.name}`,
-        userId: req.body.userId
+    try {
+      const deleted = await storage.deleteProject(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Create an activity for project deletion
+      if (req.body.userId) {
+        await storage.createActivity({
+          type: "project-updated",
+          description: `deleted project: ${project.name}`,
+          userId: req.body.userId
+        });
+      }
+      
+      res.status(204).end();
+    } catch (error: any) {
+      // Handle foreign key constraint errors
+      if (error.code === '23503') { // PostgreSQL foreign key violation code
+        if (error.message.includes('tasks_project_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete project because it has associated tasks. Please delete tasks first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "tasks_project_id_fkey"
+          });
+        } else if (error.message.includes('activities_project_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete project because it has associated activities. Please delete activities first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "activities_project_id_fkey"
+          });
+        }
+      }
+      
+      // Generic error response
+      console.error("Error deleting project:", error);
+      res.status(500).json({ 
+        message: "Failed to delete project due to a database constraint.",
+        error: error.message
       });
     }
-    
-    res.status(204).end();
   });
   
   // Task routes
