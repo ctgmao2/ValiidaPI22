@@ -165,13 +165,8 @@ export default function Admin() {
             </div>
             <div className="flex items-center gap-2">
               <FilterDialog
-                resourceType="user"
-                statusOptions={[
-                  { label: "Admin", value: "admin" },
-                  { label: "Manager", value: "manager" },
-                  { label: "Member", value: "member" }
-                ]}
-                onApplyFilters={(filters) => {
+                filterType="users"
+                onFilter={(filters) => {
                   console.log("Applied filters:", filters);
                   // In a real implementation, we would:
                   // 1. Store the filters in state
@@ -241,12 +236,8 @@ export default function Admin() {
             </div>
             <div className="flex items-center gap-2">
               <FilterDialog
-                resourceType="user"
-                statusOptions={[
-                  { label: "Active", value: "active" },
-                  { label: "Inactive", value: "inactive" }
-                ]}
-                onApplyFilters={(filters) => {
+                filterType="projects"
+                onFilter={(filters) => {
                   console.log("Applied filters:", filters);
                 }}
                 trigger={

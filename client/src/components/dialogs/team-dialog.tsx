@@ -21,26 +21,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { ReactNode, useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { User } from "@/lib/types";
+import { DataTable } from "../ui/data-table";
+import { Check, Plus, X } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
 
 const teamSchema = z.object({
   name: z.string().min(3, "Team name must be at least 3 characters"),
   description: z.string().optional(),
-  icon: z.string().optional(),
-  memberIds: z.array(z.number()).min(1, "Team must have at least one member"),
-  leaderId: z.number().optional(),
+  memberIds: z.array(z.number()).optional(),
 });
 
 type TeamFormValues = z.infer<typeof teamSchema>;
@@ -54,10 +47,12 @@ interface TeamDialogProps {
 export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch users for dropdown
+  // Fetch all users for member selection
   const { data: users } = useQuery({
     queryKey: ['/api/users'],
     enabled: open,
@@ -75,29 +70,37 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
     defaultValues: {
       name: "",
       description: "",
-      icon: "",
       memberIds: [],
-      leaderId: undefined,
     }
   });
 
-  // Update form values when team data is loaded
+  // Update available users when users data is loaded
+  useEffect(() => {
+    if (users) {
+      setAvailableUsers(users as User[]);
+    }
+  }, [users]);
+
+  // Update form values and selected members when team data is loaded
   useEffect(() => {
     if (mode === "edit" && teamData) {
       form.reset({
         name: (teamData as any).name,
         description: (teamData as any).description || "",
-        icon: (teamData as any).icon || "",
         memberIds: (teamData as any).memberIds || [],
-        leaderId: (teamData as any).leaderId,
       });
+      
+      setSelectedMembers((teamData as any).memberIds || []);
     }
   }, [form, teamData, mode]);
 
   // Create team mutation
   const createTeamMutation = useMutation({
     mutationFn: async (data: TeamFormValues) => {
-      return apiRequest("POST", "/api/teams", data);
+      return apiRequest("POST", "/api/teams", {
+        ...data,
+        memberIds: selectedMembers,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
@@ -119,7 +122,10 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
   // Update team mutation
   const updateTeamMutation = useMutation({
     mutationFn: async (data: TeamFormValues) => {
-      return apiRequest("PATCH", `/api/teams/${teamId}`, data);
+      return apiRequest("PATCH", `/api/teams/${teamId}`, {
+        ...data,
+        memberIds: selectedMembers,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
@@ -142,10 +148,15 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
   });
 
   function onSubmit(data: TeamFormValues) {
+    const formData = {
+      ...data,
+      memberIds: selectedMembers,
+    };
+    
     if (mode === "create") {
-      createTeamMutation.mutate(data);
+      createTeamMutation.mutate(formData);
     } else {
-      updateTeamMutation.mutate(data);
+      updateTeamMutation.mutate(formData);
     }
   }
 
@@ -153,45 +164,103 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
     if (newOpenState) {
       setFormKey(prev => prev + 1);
       form.reset();
+      setSelectedMembers([]);
     }
     setOpen(newOpenState);
   };
 
-  // Helper to get user name by ID
-  const getUserName = (userId: number) => {
-    if (!users) return `User #${userId}`;
-    const user = (users as any[]).find((u: any) => u.id === userId);
-    return user ? (user.name || user.username) : `User #${userId}`;
+  const toggleMember = (userId: number) => {
+    setSelectedMembers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    );
   };
 
-  // Handle adding team members
-  const addMember = (userId: number) => {
-    const currentMembers = form.getValues().memberIds || [];
-    if (!currentMembers.includes(userId)) {
-      form.setValue('memberIds', [...currentMembers, userId]);
-    }
-  };
+  // Columns for the available users table
+  const availableUsersColumns = [
+    {
+      accessorKey: "name",
+      header: "Name",
+    },
+    {
+      accessorKey: "role",
+      header: "Role",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }: { row: { original: User } }) => {
+        const userId = row.original.id;
+        const isSelected = selectedMembers.includes(userId);
+        
+        return (
+          <Button
+            variant={isSelected ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => toggleMember(userId)}
+          >
+            {isSelected ? (
+              <>
+                <X className="h-4 w-4 mr-1" /> Remove
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </>
+            )}
+          </Button>
+        );
+      },
+    },
+  ];
 
-  // Handle removing team members
-  const removeMember = (userId: number) => {
-    const currentMembers = form.getValues().memberIds || [];
-    form.setValue('memberIds', currentMembers.filter(id => id !== userId));
-  };
+  // Get the selected users for the table
+  const selectedUsersData = availableUsers.filter(user => 
+    selectedMembers.includes(user.id)
+  );
+
+  // Columns for the selected members table
+  const selectedMembersColumns = [
+    {
+      accessorKey: "name",
+      header: "Name",
+    },
+    {
+      accessorKey: "role",
+      header: "Role",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }: { row: { original: User } }) => {
+        return (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => toggleMember(row.original.id)}
+          >
+            <X className="h-4 w-4 mr-1" /> Remove
+          </Button>
+        );
+      },
+    },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || <Button>{mode === "create" ? "Create Team" : "Edit Team"}</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Create New Team" : "Edit Team"}
           </DialogTitle>
           <DialogDescription>
             {mode === "create"
-              ? "Create a new team and add members."
-              : "Update team details and membership."}
+              ? "Create a new team and assign members."
+              : "Update team information and members."}
           </DialogDescription>
         </DialogHeader>
         
@@ -201,7 +270,7 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
           </div>
         ) : (
           <Form {...form}>
-            <form key={formKey} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <form key={formKey} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="name"
@@ -224,7 +293,8 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Enter team description" 
+                        placeholder="Team description" 
+                        rows={3} 
                         {...field} 
                         value={field.value || ""}
                       />
@@ -234,107 +304,33 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Icon</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Icon name or URL" 
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Optional. Enter an icon name or image URL.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="space-y-2">
-                <FormLabel>Team Members</FormLabel>
-                {users && (users as any[]).length > 0 ? (
-                  <Select
-                    onValueChange={(value) => addMember(Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Add team members" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(users as any[]).map((user: any) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.name || user.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Team Members</h3>
+                
+                {selectedMembers.length > 0 ? (
+                  <div className="space-y-2">
+                    <FormLabel>Selected Members</FormLabel>
+                    <DataTable
+                      columns={selectedMembersColumns}
+                      data={selectedUsersData}
+                      emptyMessage="No members selected"
+                    />
+                  </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Loading users...</p>
+                  <p className="text-sm text-muted-foreground">No members selected.</p>
                 )}
                 
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {form.watch('memberIds')?.map((memberId) => (
-                    <Badge key={memberId} variant="secondary" className="flex items-center gap-1">
-                      {getUserName(memberId)}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => removeMember(memberId)}
-                      />
-                    </Badge>
-                  ))}
+                <div className="space-y-2">
+                  <FormLabel>Available Users</FormLabel>
+                  <ScrollArea className="h-[200px]">
+                    <DataTable
+                      columns={availableUsersColumns}
+                      data={availableUsers}
+                      emptyMessage="No users available"
+                    />
+                  </ScrollArea>
                 </div>
-                
-                <FormField
-                  control={form.control}
-                  name="memberIds"
-                  render={({ field }) => (
-                    <FormItem className="hidden">
-                      <FormControl>
-                        <Input type="hidden" value={field.value?.join(',')} onChange={(e) => {
-                          const values = e.target.value ? e.target.value.split(',').map(Number) : [];
-                          field.onChange(values);
-                        }} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
-              
-              <FormField
-                control={form.control}
-                name="leaderId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Leader</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      value={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team leader (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {form.watch('memberIds')?.map((memberId) => (
-                          <SelectItem key={memberId} value={memberId.toString()}>
-                            {getUserName(memberId)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Optional. Select a team member to be the leader.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
@@ -348,7 +344,7 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
                   type="submit"
                   disabled={createTeamMutation.isPending || updateTeamMutation.isPending}
                 >
-                  {mode === "create" ? "Create Team" : "Update Team"}
+                  {mode === "create" ? "Create Team" : "Save Changes"}
                 </Button>
               </div>
             </form>

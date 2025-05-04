@@ -11,7 +11,7 @@ import Team from "@/pages/team";
 import Reports from "@/pages/reports";
 import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
-import MobileNav from "@/components/layout/mobile-nav";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import Footer from "@/components/layout/footer";
 import { AccessibilityProvider } from "@/hooks/use-accessibility";
 import { AccessibilityButton } from "@/components/accessibility/accessibility-panel";

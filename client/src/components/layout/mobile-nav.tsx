@@ -1,46 +1,145 @@
-import { Link, useLocation } from 'wouter';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { BarChart3, Home, LayoutGrid, ListChecks, Settings, Users } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useLocation, Link } from "wouter";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  LayoutDashboard,
+  ListTodo,
+  FolderKanban,
+  Users,
+  Settings,
+  BarChart3,
+  Menu,
+  X
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { AccessibilityButton } from "@/components/accessibility/accessibility-panel";
 
-export default function MobileNav() {
-  const isMobile = useIsMobile();
+interface MobileNavProps {
+  className?: string;
+}
+
+export function MobileNav({ className }: MobileNavProps) {
   const [location] = useLocation();
-  
-  const navLinks = [
-    { href: '/', label: 'Dashboard', icon: Home },
-    { href: '/projects', label: 'Projects', icon: LayoutGrid },
-    { href: '/tasks', label: 'Tasks', icon: ListChecks },
-    { href: '/team', label: 'Team', icon: Users },
-    { href: '/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/admin', label: 'Admin', icon: Settings },
-  ];
-  
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Close the mobile nav when changing location
+  useEffect(() => {
+    setOpen(false);
+  }, [location]);
+
+  // Don't render on desktop
   if (!isMobile) return null;
-  
+
+  const closeSheet = () => setOpen(false);
+
   return (
-    <div className="fixed bottom-0 z-40 w-full border-t bg-background">
-      <nav className="grid grid-cols-5 gap-1 py-2">
-        {navLinks.slice(0, 5).map((link) => {
-          const Icon = link.icon;
-          const isActive = location === link.href;
-          return (
-            <Link 
-              key={link.href} 
-              href={link.href}
-              className={cn(
-                'flex flex-col items-center justify-center p-2 text-xs',
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Icon className="mb-1 h-5 w-5" />
-              <span>{link.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+    <div className={cn("lg:hidden", className)}>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="p-0 w-9 h-9">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="flex flex-col">
+          <SheetHeader className="flex justify-between items-center mb-4">
+            <SheetTitle>Menu</SheetTitle>
+            <Button variant="ghost" size="icon" onClick={closeSheet}>
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close menu</span>
+            </Button>
+          </SheetHeader>
+
+          <Separator className="mb-4" />
+          
+          <div className="flex flex-col gap-1 mb-auto">
+            <MobileNavLink
+              href="/dashboard"
+              label="Dashboard"
+              icon={<LayoutDashboard className="mr-2 h-4 w-4" />}
+              active={location === "/dashboard"}
+              onClick={closeSheet}
+            />
+            <MobileNavLink
+              href="/tasks"
+              label="Tasks"
+              icon={<ListTodo className="mr-2 h-4 w-4" />}
+              active={location === "/tasks"}
+              onClick={closeSheet}
+            />
+            <MobileNavLink
+              href="/projects"
+              label="Projects"
+              icon={<FolderKanban className="mr-2 h-4 w-4" />}
+              active={location === "/projects"}
+              onClick={closeSheet}
+            />
+            <MobileNavLink
+              href="/team"
+              label="Team"
+              icon={<Users className="mr-2 h-4 w-4" />}
+              active={location === "/team"}
+              onClick={closeSheet}
+            />
+            <MobileNavLink
+              href="/reports"
+              label="Reports"
+              icon={<BarChart3 className="mr-2 h-4 w-4" />}
+              active={location === "/reports"}
+              onClick={closeSheet}
+            />
+            <MobileNavLink
+              href="/admin"
+              label="Admin"
+              icon={<Settings className="mr-2 h-4 w-4" />}
+              active={location === "/admin"}
+              onClick={closeSheet}
+            />
+          </div>
+          
+          <div className="mt-4">
+            <Separator className="mb-4" />
+            <div className="px-1">
+              <AccessibilityButton />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+interface MobileNavLinkProps {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}
+
+function MobileNavLink({ href, label, icon, active, onClick }: MobileNavLinkProps) {
+  return (
+    <Link href={href}>
+      <a
+        className={cn(
+          "flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+          active ? "bg-accent text-accent-foreground" : "transparent"
+        )}
+        onClick={onClick}
+      >
+        {icon}
+        {label}
+      </a>
+    </Link>
   );
 }
