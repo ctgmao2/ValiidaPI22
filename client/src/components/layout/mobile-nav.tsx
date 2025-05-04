@@ -130,7 +130,7 @@ interface MobileNavLinkProps {
 function MobileNavLink({ href, label, icon, active, onClick }: MobileNavLinkProps) {
   return (
     <Link href={href}>
-      <a
+      <div
         className={cn(
           "flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
           active ? "bg-accent text-accent-foreground" : "transparent"
@@ -139,7 +139,7 @@ function MobileNavLink({ href, label, icon, active, onClick }: MobileNavLinkProp
       >
         {icon}
         {label}
-      </a>
+      </div>
     </Link>
   );
 }
