@@ -19,7 +19,7 @@ import {
   User
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { 
   Select, 
@@ -43,8 +43,8 @@ import { TaskDialog } from "@/components/dialogs/task-dialog";
 
 export default function ProjectTasks() {
   const { toast } = useToast();
-  const [, params] = useParams();
-  const projectId = params ? parseInt(params) : null;
+  const [location] = useLocation();
+  const projectId = location.startsWith('/projects/') ? parseInt(location.split('/')[2]) : null;
   const [filter, setFilter] = useState("all");
 
   const { data: project, isLoading: isLoadingProject, error: projectError } = useQuery<Project>({

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Project, Task } from "@/lib/types";
+import { Project, Task } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { 
   ArrowLeft, 
@@ -16,7 +16,7 @@ import {
   User
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { 
   Select, 

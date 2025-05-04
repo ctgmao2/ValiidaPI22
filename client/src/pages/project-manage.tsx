@@ -7,12 +7,12 @@ import { Project } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Users, Settings, Shield, Calendar } from "lucide-react";
 import { useEffect } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function ProjectManage() {
   const { toast } = useToast();
-  const [, params] = useParams();
-  const projectId = params ? parseInt(params) : null;
+  const [location] = useLocation();
+  const projectId = location.startsWith('/projects/') ? parseInt(location.split('/')[2]) : null;
 
   const { data: project, isLoading, error } = useQuery<Project>({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
