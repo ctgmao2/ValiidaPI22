@@ -26,14 +26,16 @@ import { ReactNode, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { User } from "@/lib/types";
 
 const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
-  email: z.string().email("Invalid email address"),
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address").optional(),
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
   role: z.string().optional(),
-  bio: z.string().optional(),
+  initials: z.string().min(1, "Initials are required"),
+  avatarColor: z.string().min(3, "Please select a color"),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
@@ -51,7 +53,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   const queryClient = useQueryClient();
 
   // Fetch user data if in edit mode
-  const { data: userData, isLoading } = useQuery({
+  const { data: userData, isLoading } = useQuery<User>({
     queryKey: userId ? ['/api/users', userId] : ['disabled-query'],
     enabled: mode === "edit" && !!userId && open,
   });
@@ -63,21 +65,25 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
       username: "",
       password: mode === "create" ? "" : undefined,
       email: "",
-      name: "",
+      fullName: "",
       role: "",
-      bio: "",
+      initials: "",
+      avatarColor: mode === "create" ? "#4f46e5" : "", // Default color
     }
   });
 
   // Update form values when user data is loaded
   useEffect(() => {
     if (mode === "edit" && userData) {
+      const user = userData as User;
+      
       form.reset({
-        username: (userData as any).username,
-        email: (userData as any).email || "",
-        name: (userData as any).name || "",
-        role: (userData as any).role || "",
-        bio: (userData as any).bio || "",
+        username: user.username,
+        email: user.email || "",
+        fullName: user.fullName,
+        role: user.role || "",
+        initials: user.initials,
+        avatarColor: user.avatarColor,
       });
     }
   }, [form, userData, mode]);
@@ -244,12 +250,56 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
               
               <FormField
                 control={form.control}
-                name="name"
+                name="fullName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Full Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="initials"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initials</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Initials (e.g., JD)" 
+                        maxLength={3} 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Your initials (1-3 characters) for profile display
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="avatarColor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avatar Color</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-6 h-6 rounded-full border" 
+                          style={{ backgroundColor: field.value }}
+                        />
+                        <Input 
+                          type="color" 
+                          {...field} 
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -274,25 +324,6 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
                         <SelectItem value="member">Member</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Brief description" 
-                        rows={3} 
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
