@@ -16,10 +16,12 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import Footer from "@/components/layout/footer";
 import { AccessibilityProvider } from "@/hooks/use-accessibility";
 import { AccessibilityButton } from "@/components/accessibility/accessibility-panel";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function AppRoutes() {
   return (
     <Switch>
+      <Route path="/login" component={Login} />
       <Route path="/" component={Dashboard} />
       <Route path="/projects" component={Projects} />
       <Route path="/tasks" component={Tasks} />
@@ -32,20 +34,25 @@ function AppRoutes() {
 }
 
 function App() {
+  const [location] = useLocation();
+  const isLoginPage = location === "/login";
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AccessibilityProvider>
-          <WouterRouter base="">
-            <div className="min-h-screen flex flex-col">
-              <Toaster />
-              <AccessibilityButton />
-              <Header />
-              <MobileNav />
-              <AppRoutes />
-              <Footer />
-            </div>
-          </WouterRouter>
+          <AuthProvider>
+            <WouterRouter base="">
+              <div className="min-h-screen flex flex-col">
+                <Toaster />
+                {!isLoginPage && <AccessibilityButton />}
+                {!isLoginPage && <Header />}
+                {!isLoginPage && <MobileNav />}
+                <AppRoutes />
+                {!isLoginPage && <Footer />}
+              </div>
+            </WouterRouter>
+          </AuthProvider>
         </AccessibilityProvider>
       </TooltipProvider>
     </QueryClientProvider>

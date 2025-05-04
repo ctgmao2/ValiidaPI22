@@ -2,13 +2,16 @@ import { Link, useLocation } from 'wouter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { AccessibilityPanel } from '@/components/accessibility/accessibility-panel';
+import { useAuth } from '@/hooks/use-auth';
 import {
   BarChart3,
   Home,
   LayoutGrid,
   ListChecks,
+  LogOut,
   Menu,
   Settings,
+  UserCircle,
   Users,
   X,
 } from 'lucide-react';
@@ -84,9 +87,11 @@ export default function Header() {
 
         <div className="ml-auto flex items-center space-x-2">
           <AccessibilityPanel />
-          <Button size="sm" className="ml-4">
-            Sign In
-          </Button>
+          <Link href="/login">
+            <Button size="sm" className="ml-4">
+              Sign In
+            </Button>
+          </Link>
         </div>
       </div>
 

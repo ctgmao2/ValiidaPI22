@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   username: z.string().min(3, {
@@ -51,25 +52,29 @@ export function SignIn() {
     }
   });
 
+  const { login } = useAuth();
+
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
     try {
-      // For demo purposes, we'll simulate a successful login
-      // In a real app, this would be an API call
-      console.log("Login attempt with:", data);
+      const success = await login(data.username, data.password);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Successful login
-      toast({
-        title: "Login successful",
-        description: "Welcome back to the system!",
-      });
-      
-      // Redirect to dashboard
-      setLocation("/dashboard");
+      if (success) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to the system!",
+        });
+        
+        // Redirect to dashboard
+        setLocation("/");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: "Please check your credentials and try again."
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
