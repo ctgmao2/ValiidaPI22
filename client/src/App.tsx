@@ -17,6 +17,11 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import Footer from "@/components/layout/footer";
 import { AccessibilityProvider } from "@/hooks/use-accessibility";
 import { AccessibilityButton } from "@/components/accessibility/accessibility-panel";
+// Import project-specific pages
+import ProjectManage from "@/pages/project-manage";
+import ProjectWiki from "@/pages/project-wiki";
+import ProjectTasks from "@/pages/project-tasks";
+import ProjectTime from "@/pages/project-time";
 
 import { ProtectedRoute } from "@/components/auth/protected-route";
 
