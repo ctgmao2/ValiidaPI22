@@ -50,8 +50,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 export default function ProjectTime() {
   const { toast } = useToast();
-  const [, params] = useParams();
-  const projectId = params ? parseInt(params) : null;
+  const [location] = useLocation();
+  const projectId = location.startsWith('/projects/') ? parseInt(location.split('/')[2]) : null;
   const [activeTab, setActiveTab] = useState("entries");
 
   const { data: project, isLoading: isLoadingProject, error: projectError } = useQuery<Project>({
