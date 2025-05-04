@@ -34,7 +34,8 @@ type RoleFormValues = z.infer<typeof roleSchema>;
 
 interface UserRoleDialogProps {
   userId: number;
-  currentRole: string;
+  username?: string; // Optional username for display purposes
+  currentRole: string | null;
   trigger?: ReactNode;
 }
 

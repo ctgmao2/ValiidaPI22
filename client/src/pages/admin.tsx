@@ -151,10 +151,12 @@ export default function Admin() {
                   />
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  {/* Using admin user ID (1) for tracking purposes */}
                   <ConfirmDeleteDialog
                     resourceType="user"
                     resourceId={user.id}
                     resourceName={user.username}
+                    userId={1}
                     queryKeysToInvalidate={['/api/users']}
                     trigger={
                       <div className="flex items-center cursor-pointer w-full text-destructive">
@@ -172,15 +174,21 @@ export default function Admin() {
     },
   ];
 
+  // Filter users based on search query
   const filteredUsers = users?.filter(user => {
     if (!searchQuery) return true;
     return (
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.status?.toLowerCase().includes(searchQuery.toLowerCase())
+      user.role?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }) || [];
+
+  // Enhance users with a status property for UI display purposes
+  const enhancedUsers = filteredUsers.map(user => ({
+    ...user,
+    status: "active" // Add a default status for display purposes
+  }));
 
   return (
     <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 bg-neutral-100">
@@ -277,7 +285,7 @@ export default function Admin() {
                 ) : (
                   <DataTable 
                     columns={columns} 
-                    data={filteredUsers} 
+                    data={enhancedUsers} 
                     emptyMessage="No users found" 
                   />
                 )}
