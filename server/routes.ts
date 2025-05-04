@@ -103,12 +103,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Invalid user ID" });
     }
     
-    const deleted = await storage.deleteUser(id);
-    if (!deleted) {
+    // First get the user to log its name
+    const user = await storage.getUser(id);
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     
-    res.status(204).end();
+    try {
+      const deleted = await storage.deleteUser(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error: any) {
+      // Handle foreign key constraint errors
+      if (error.code === '23503') { // PostgreSQL foreign key violation code
+        if (error.message.includes('tasks_assignee_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete user because they are assigned to tasks. Reassign or delete these tasks first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "tasks_assignee_id_fkey"
+          });
+        } else if (error.message.includes('tasks_reporter_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete user because they are the reporter of tasks. Change reporter or delete these tasks first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "tasks_reporter_id_fkey"
+          });
+        } else if (error.message.includes('activities_user_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete user because they have associated activities. Delete these activities first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "activities_user_id_fkey"
+          });
+        } else if (error.message.includes('comments_user_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete user because they have created comments. Delete these comments first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "comments_user_id_fkey"
+          });
+        }
+      }
+      
+      // Generic error response
+      console.error("Error deleting user:", error);
+      res.status(500).json({ 
+        message: "Failed to delete user due to a database constraint.",
+        error: error.message
+      });
+    }
   });
   
   // Project routes
@@ -379,22 +423,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Task not found" });
     }
     
-    const deleted = await storage.deleteTask(id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-    
-    // Create an activity for task deletion
-    if (req.body.userId && task.projectId) {
-      await storage.createActivity({
-        type: "task-updated",
-        description: `deleted task: ${task.title}`,
-        userId: req.body.userId,
-        projectId: task.projectId
+    try {
+      const deleted = await storage.deleteTask(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Create an activity for task deletion
+      if (req.body.userId && task.projectId) {
+        await storage.createActivity({
+          type: "task-updated",
+          description: `deleted task: ${task.title}`,
+          userId: req.body.userId,
+          projectId: task.projectId
+        });
+      }
+      
+      res.status(204).end();
+    } catch (error: any) {
+      // Handle foreign key constraint errors
+      if (error.code === '23503') { // PostgreSQL foreign key violation code
+        if (error.message.includes('activities_task_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete task because it has associated activities. You may need to delete the activities first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "activities_task_id_fkey"
+          });
+        } else if (error.message.includes('task_dependencies_task_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete task because it has dependencies. Please remove dependencies first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "task_dependencies_task_id_fkey"
+          });
+        } else if (error.message.includes('task_dependencies_depends_on_id_fkey')) {
+          return res.status(409).json({ 
+            message: "Cannot delete task because other tasks depend on it. Please remove dependencies first.",
+            error: "FOREIGN_KEY_VIOLATION",
+            details: "task_dependencies_depends_on_id_fkey"
+          });
+        }
+      }
+      
+      // Generic error response
+      console.error("Error deleting task:", error);
+      res.status(500).json({ 
+        message: "Failed to delete task due to a database constraint.",
+        error: error.message
       });
     }
-    
-    res.status(204).end();
   });
   
   app.patch("/api/tasks/:id/status", async (req: Request, res: Response) => {

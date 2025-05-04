@@ -33,6 +33,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Define type for user rows displayed in the data table
+interface UserRow {
+  id: number;
+  username: string;
+  email: string | null;
+  role: string | null;
+  fullName: string;
+  avatarColor: string;
+  initials: string;
+  // Additional properties that might be added by the UI
+  status?: string;
+}
+
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("users");
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +54,7 @@ export default function Admin() {
     queryKey: ['/api/users'],
   });
 
-  const columns: ColumnDef<User>[] = [
+  const columns: ColumnDef<UserRow>[] = [
     {
       accessorKey: "id",
       header: "ID",
