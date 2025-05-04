@@ -3,12 +3,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Project } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Users, Settings, Shield, Calendar } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Users, 
+  Settings, 
+  Shield, 
+  Calendar, 
+  MoreHorizontal 
+} from "lucide-react";
 import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -339,13 +355,109 @@ export default function ProjectManage() {
                 <CardHeader>
                   <CardTitle>Permissions</CardTitle>
                   <CardDescription>
-                    Configure who can perform various actions within this project
+                    Configure which roles can perform various actions within this project
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-neutral-500">
-                    This section is under development. Here you'll be able to configure project permissions.
-                  </p>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Role Access Control</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Set which project roles have access to specific permissions
+                    </p>
+                    
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[200px]">Permission</TableHead>
+                            <TableHead className="text-center">Project Manager</TableHead>
+                            <TableHead className="text-center">Developer</TableHead>
+                            <TableHead className="text-center">Viewer</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="font-medium">View Tasks</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="view-tasks-pm" defaultChecked disabled />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="view-tasks-dev" defaultChecked />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="view-tasks-viewer" defaultChecked />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Create Tasks</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="create-tasks-pm" defaultChecked disabled />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="create-tasks-dev" defaultChecked />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="create-tasks-viewer" />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Edit Tasks</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="edit-tasks-pm" defaultChecked disabled />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="edit-tasks-dev" defaultChecked />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="edit-tasks-viewer" />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Delete Tasks</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="delete-tasks-pm" defaultChecked disabled />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="delete-tasks-dev" />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="delete-tasks-viewer" />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Manage Team</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="manage-team-pm" defaultChecked disabled />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="manage-team-dev" />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="manage-team-viewer" />
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">Edit Wiki</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="edit-wiki-pm" defaultChecked disabled />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="edit-wiki-dev" defaultChecked />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox id="edit-wiki-viewer" />
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button variant="default" type="button">
+                      Save Permissions
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -355,13 +467,116 @@ export default function ProjectManage() {
                 <CardHeader>
                   <CardTitle>Calendar Settings</CardTitle>
                   <CardDescription>
-                    Configure calendar settings and integrations
+                    Configure calendar display options and preferences
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-neutral-500">
-                    This section is under development. Here you'll be able to configure calendar settings.
-                  </p>
+                  <form className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Date Format</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Choose how dates are displayed throughout the project
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="flex items-start space-x-3">
+                          <div>
+                            <RadioGroup defaultValue="brazilian">
+                              <div className="flex items-center space-x-2 mb-3">
+                                <RadioGroupItem value="american" id="date-format-american" />
+                                <Label htmlFor="date-format-american">American Format (MM-DD-YYYY)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2 mb-3">
+                                <RadioGroupItem value="brazilian" id="date-format-brazilian" />
+                                <Label htmlFor="date-format-brazilian">Brazilian Format (DD-MM-YYYY)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="iso" id="date-format-iso" />
+                                <Label htmlFor="date-format-iso">ISO Format (YYYY-MM-DD)</Label>
+                              </div>
+                            </RadioGroup>
+                          </div>
+                        </div>
+
+                        <div className="p-4 border rounded-md">
+                          <h4 className="text-sm font-medium mb-2">Preview</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">American Format:</span>
+                              <span>05-04-2025</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Brazilian Format:</span>
+                              <span>04-05-2025</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">ISO Format:</span>
+                              <span>2025-05-04</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Time Format</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="use-24-hour" />
+                            <Label htmlFor="use-24-hour">Use 24-hour time format</Label>
+                          </div>
+                          <p className="text-[0.8rem] text-muted-foreground mt-2">
+                            When enabled, times will be shown in 24-hour format (14:30) instead of 12-hour format (2:30 PM)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Calendar View</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="default-calendar-view">Default Calendar View</Label>
+                          <Select defaultValue="month">
+                            <SelectTrigger id="default-calendar-view">
+                              <SelectValue placeholder="Select view" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="month">Month view</SelectItem>
+                              <SelectItem value="week">Week view</SelectItem>
+                              <SelectItem value="day">Day view</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[0.8rem] text-muted-foreground mt-2">
+                            Sets the default calendar view when users access the calendar
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="first-day-of-week">First Day of Week</Label>
+                          <Select defaultValue="sunday">
+                            <SelectTrigger id="first-day-of-week">
+                              <SelectValue placeholder="Select day" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sunday">Sunday</SelectItem>
+                              <SelectItem value="monday">Monday</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[0.8rem] text-muted-foreground mt-2">
+                            Sets which day appears as the first day of the week
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                      <Button variant="default" type="button">
+                        Save Settings
+                      </Button>
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             </TabsContent>
