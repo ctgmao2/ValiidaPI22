@@ -159,6 +159,7 @@ export default function Projects() {
                         resourceId={project.id}
                         resourceName={project.name}
                         userId={1} // Typically this would come from auth context
+                        queryKeysToInvalidate={['/api/projects']}
                         trigger={
                           <div className="flex items-center cursor-pointer w-full text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -191,22 +192,33 @@ export default function Projects() {
             </div>
           </CardContent>
           <CardFooter className="border-t pt-3 pb-3 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-              <FileText className="h-4 w-4 mr-1" />
-              Wiki
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-              <Layers className="h-4 w-4 mr-1" />
-              Tasks
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-              <Clock className="h-4 w-4 mr-1" />
-              Time
-            </Button>
-            <Button variant="default" size="sm" className="flex-1 sm:flex-none">
-              <Settings className="h-4 w-4 mr-1" />
-              Manage
-            </Button>
+            <Link href={`/projects/${project.id}/wiki`}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                <FileText className="h-4 w-4 mr-1" />
+                Wiki
+              </Button>
+            </Link>
+            
+            <Link href={`/projects/${project.id}/tasks`}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                <Layers className="h-4 w-4 mr-1" />
+                Tasks
+              </Button>
+            </Link>
+            
+            <Link href={`/projects/${project.id}/time`}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                <Clock className="h-4 w-4 mr-1" />
+                Time
+              </Button>
+            </Link>
+            
+            <Link href={`/projects/${project.id}/manage`}>
+              <Button variant="default" size="sm" className="flex-1 sm:flex-none">
+                <Settings className="h-4 w-4 mr-1" />
+                Manage
+              </Button>
+            </Link>
           </CardFooter>
         </Card>
         
