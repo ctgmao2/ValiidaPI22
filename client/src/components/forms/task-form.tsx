@@ -75,17 +75,16 @@ export function TaskForm({
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      status: TaskStatus.NEW,
-      priority: TaskPriority.MEDIUM,
-      progress: 0,
-      projectId: undefined,
-      assigneeId: undefined,
-      reporterId: undefined,
-      dueDate: null,
-      startDate: null,
-      ...defaultValues,
+      title: defaultValues?.title || "",
+      description: defaultValues?.description || "",
+      status: defaultValues?.status || TaskStatus.NEW,
+      priority: defaultValues?.priority || TaskPriority.MEDIUM,
+      progress: defaultValues?.progress || 0,
+      projectId: defaultValues?.projectId,
+      assigneeId: defaultValues?.assigneeId,
+      reporterId: defaultValues?.reporterId,
+      dueDate: defaultValues?.dueDate ? new Date(defaultValues.dueDate) : null,
+      startDate: defaultValues?.startDate ? new Date(defaultValues.startDate) : null,
     },
   });
 

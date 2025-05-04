@@ -169,7 +169,7 @@ export default function ProjectManage() {
                           </label>
                           <Input
                             id="project-identifier"
-                            defaultValue={project.id.toString()}
+                            defaultValue={project.id ? project.id.toString() : ''}
                             placeholder="Enter project identifier"
                           />
                           <p className="text-[0.8rem] text-muted-foreground">

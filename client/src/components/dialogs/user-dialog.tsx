@@ -73,14 +73,22 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   // Create form with validation
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: {
+    defaultValues: mode === "create" ? {
       username: "",
-      password: mode === "create" ? "" : undefined,
+      password: "",
       email: "",
       fullName: "",
       role: "",
       initials: "",
-      avatarColor: mode === "create" ? "#4f46e5" : "", // Default color
+      avatarColor: "#4f46e5", // Default color
+    } : {
+      username: "",
+      password: undefined,
+      email: "",
+      fullName: "",
+      role: "",
+      initials: "",
+      avatarColor: "",
     }
   });
 
