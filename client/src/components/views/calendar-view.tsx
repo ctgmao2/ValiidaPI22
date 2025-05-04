@@ -51,7 +51,7 @@ export function CalendarView() {
     
     return tasks.filter((task: Task) => {
       if (!task.dueDate) return false;
-      const taskDate = parseISO(task.dueDate);
+      const taskDate = typeof task.dueDate === 'string' ? parseISO(task.dueDate) : task.dueDate;
       return isSameDay(taskDate, date);
     });
   };
@@ -90,7 +90,7 @@ export function CalendarView() {
     
     return tasks.filter((task: Task) => {
       if (!task.dueDate) return false;
-      const taskDate = parseISO(task.dueDate);
+      const taskDate = typeof task.dueDate === 'string' ? parseISO(task.dueDate) : task.dueDate;
       return isWithinInterval(taskDate, { start, end });
     });
   };
