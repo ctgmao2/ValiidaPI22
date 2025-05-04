@@ -1,6 +1,7 @@
-import { User as BaseUser, Task, Project, Activity } from "@shared/schema";
+import { User as BaseUser, Task as BaseTask, Project, Activity } from "@shared/schema";
 
 export type User = BaseUser;
+export type Task = BaseTask;
 
 export interface TaskWithAssignee extends Task {
   assignee?: User | null;
