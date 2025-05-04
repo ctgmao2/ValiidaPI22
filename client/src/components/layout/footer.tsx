@@ -1,15 +1,22 @@
+import { useIsMobile } from "@/hooks/use-mobile";
+
 export default function Footer() {
+  const isMobile = useIsMobile();
+  
+  // Add extra padding at the bottom on mobile to account for the navigation bar
+  const paddingClass = isMobile ? 'pb-20' : '';
+  
   return (
-    <footer className="bg-white border-t border-neutral-200 py-4">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-        <div className="text-center md:text-left mb-4 md:mb-0">
-          <p className="text-sm text-neutral-500">&copy; 2023 EcoManage - Sustainable Community Resource Management</p>
+    <footer className={`border-t bg-background mt-auto ${paddingClass}`}>
+      <div className="container px-4 py-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground">
+        <div className="flex items-center mb-3 sm:mb-0">
+          <p>&copy; {new Date().getFullYear()} RedmineClone. All rights reserved.</p>
         </div>
-        <div className="flex space-x-6">
-          <a href="#" className="text-sm text-neutral-500 hover:text-primary">Help & Documentation</a>
-          <a href="#" className="text-sm text-neutral-500 hover:text-primary">Privacy Policy</a>
-          <a href="#" className="text-sm text-neutral-500 hover:text-primary">Terms of Service</a>
-          <a href="#" className="text-sm text-neutral-500 hover:text-primary">Contact Support</a>
+        <div className="flex flex-wrap gap-4 justify-center">
+          <a href="#" className="hover:underline">Privacy Policy</a>
+          <a href="#" className="hover:underline">Terms of Service</a>
+          <a href="#" className="hover:underline">Contact</a>
+          <a href="#" className="hover:underline">Help</a>
         </div>
       </div>
     </footer>

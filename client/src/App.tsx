@@ -13,7 +13,8 @@ import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 import MobileNav from "@/components/layout/mobile-nav";
 import Footer from "@/components/layout/footer";
-import AccessibilityControls from "@/components/shared/accessibility-controls";
+import { AccessibilityProvider } from "@/hooks/use-accessibility";
+import { AccessibilityButton } from "@/components/accessibility/accessibility-panel";
 
 function AppRoutes() {
   return (
@@ -33,16 +34,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base="">
-          <div className="min-h-screen flex flex-col">
-            <Toaster />
-            <AccessibilityControls />
-            <Header />
-            <MobileNav />
-            <AppRoutes />
-            <Footer />
-          </div>
-        </WouterRouter>
+        <AccessibilityProvider>
+          <WouterRouter base="">
+            <div className="min-h-screen flex flex-col">
+              <Toaster />
+              <AccessibilityButton />
+              <Header />
+              <MobileNav />
+              <AppRoutes />
+              <Footer />
+            </div>
+          </WouterRouter>
+        </AccessibilityProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

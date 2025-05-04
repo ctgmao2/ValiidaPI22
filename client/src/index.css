@@ -13,23 +13,30 @@
 }
 
 /* Accessibility Classes */
-.high-contrast-mode {
+.high-contrast {
   filter: contrast(1.5);
 }
 
-.high-contrast-mode a, 
-.high-contrast-mode button, 
-.high-contrast-mode .text-primary {
+.high-contrast a, 
+.high-contrast button, 
+.high-contrast .text-primary {
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
-.high-contrast-mode .bg-white {
+.high-contrast .bg-white,
+.high-contrast .bg-background {
   background-color: #fff !important;
 }
 
-.high-contrast-mode .text-neutral-500,
-.high-contrast-mode .text-neutral-600 {
+.high-contrast .text-muted-foreground,
+.high-contrast .text-neutral-500,
+.high-contrast .text-neutral-600 {
   color: #000 !important;
+}
+
+.high-contrast .border {
+  border-color: #000 !important;
+  border-width: 1px;
 }
 
 .large-text {
@@ -54,4 +61,29 @@
 .large-text button:not(.icon *) {
   font-size: 1.2em;
   line-height: 1.5;
+}
+
+/* Color-blind friendly palette */
+.color-blind-friendly .bg-green-500 {
+  background-color: #006699 !important; /* Blue instead of green */
+}
+
+.color-blind-friendly .bg-red-500 {
+  background-color: #E69F00 !important; /* Yellow/amber instead of red */
+}
+
+.color-blind-friendly .bg-yellow-500 {
+  background-color: #009E73 !important; /* Teal instead of yellow */
+}
+
+.color-blind-friendly .text-green-500 {
+  color: #006699 !important;
+}
+
+.color-blind-friendly .text-red-500 {
+  color: #E69F00 !important;
+}
+
+.color-blind-friendly .text-yellow-500 {
+  color: #009E73 !important;
 }
