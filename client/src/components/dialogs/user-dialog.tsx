@@ -57,6 +57,18 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
     queryKey: userId ? ['/api/users', userId] : ['disabled-query'],
     enabled: mode === "edit" && !!userId && open,
   });
+  
+  // Form ready state to control rendering
+  const [formReady, setFormReady] = useState(mode === "create");
+  
+  // Update formReady state when data loads
+  useEffect(() => {
+    if (mode === "create") {
+      setFormReady(true);
+    } else if (mode === "edit") {
+      setFormReady(!isLoading && !!userData);
+    }
+  }, [mode, isLoading, userData]);
 
   // Create form with validation
   const form = useForm<UserFormValues>({
@@ -76,6 +88,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   useEffect(() => {
     if (mode === "edit" && userData) {
       const user = userData as User;
+      console.log("UserDialog: Got user data for edit", user);
       
       form.reset({
         username: user.username,
@@ -87,6 +100,14 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
       });
     }
   }, [form, userData, mode]);
+  
+  // Debug logging
+  useEffect(() => {
+    if (open) {
+      console.log(`UserDialog: mode=${mode}, userId=${userId}, formReady=${formReady}`);
+      console.log("Form values:", form.getValues());
+    }
+  }, [open, formReady, mode, userId, form]);
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -149,10 +170,21 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   }
 
   const handleOpenChange = (newOpenState: boolean) => {
-    if (newOpenState) {
-      setFormKey(prev => prev + 1);
-      form.reset();
+    // Reset form ready state when dialog closes
+    if (!newOpenState && open) {
+      setFormReady(mode === "create");
     }
+    
+    // Force form to remount when dialog opens
+    if (newOpenState && !open) {
+      setFormKey(prev => prev + 1);
+      // For edit mode, we'll wait for data to load
+      setFormReady(mode === "create");
+      if (mode === "create") {
+        form.reset();
+      }
+    }
+    
     setOpen(newOpenState);
   };
 
@@ -173,7 +205,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
           </DialogDescription>
         </DialogHeader>
         
-        {isLoading && mode === "edit" ? (
+        {!formReady ? (
           <div className="flex justify-center items-center py-8">
             <p className="text-muted-foreground">Loading user data...</p>
           </div>
