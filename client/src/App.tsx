@@ -71,6 +71,35 @@ function AppRoutes() {
           </ProtectedRoute>
         )}
       </Route>
+      {/* Project-specific routes */}
+      <Route path="/projects/:id/manage">
+        {() => (
+          <ProtectedRoute>
+            <ProjectManage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/projects/:id/wiki">
+        {() => (
+          <ProtectedRoute>
+            <ProjectWiki />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/projects/:id/tasks">
+        {() => (
+          <ProtectedRoute>
+            <ProjectTasks />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/projects/:id/time">
+        {() => (
+          <ProtectedRoute>
+            <ProjectTime />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/:rest*" component={NotFound} />
     </Switch>
   );

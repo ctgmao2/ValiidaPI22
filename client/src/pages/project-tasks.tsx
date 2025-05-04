@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Project, Task, TaskWithAssignee } from "@/lib/types";
+import { Project, Task } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { 
   ArrowLeft, 
@@ -43,8 +43,8 @@ import { TaskDialog } from "@/components/dialogs/task-dialog";
 
 export default function ProjectTasks() {
   const { toast } = useToast();
-  const [, params] = useParams("/projects/:id/tasks");
-  const projectId = params?.id ? parseInt(params.id) : null;
+  const [, params] = useParams();
+  const projectId = params ? parseInt(params) : null;
   const [filter, setFilter] = useState("all");
 
   const { data: project, isLoading: isLoadingProject, error: projectError } = useQuery<Project>({

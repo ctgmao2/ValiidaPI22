@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Project } from "@/lib/types";
+import { Project } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Edit, Plus, FileText, Menu } from "lucide-react";
 import { useEffect } from "react";
@@ -10,8 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ProjectWiki() {
   const { toast } = useToast();
-  const [, params] = useParams("/projects/:id/wiki");
-  const projectId = params?.id ? parseInt(params.id) : null;
+  const [, params] = useParams();
+  const projectId = params ? parseInt(params) : null;
 
   const { data: project, isLoading, error } = useQuery<Project>({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],

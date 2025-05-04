@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Project } from "@/lib/types";
+import { Project } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Users, Settings, Shield, Calendar } from "lucide-react";
 import { useEffect } from "react";
@@ -11,8 +11,8 @@ import { Link, useParams } from "wouter";
 
 export default function ProjectManage() {
   const { toast } = useToast();
-  const [, params] = useParams("/projects/:id/manage");
-  const projectId = params?.id ? parseInt(params.id) : null;
+  const [, params] = useParams();
+  const projectId = params ? parseInt(params) : null;
 
   const { data: project, isLoading, error } = useQuery<Project>({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
