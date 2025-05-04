@@ -79,7 +79,7 @@ export default function Admin() {
     {
       id: "actions",
       header: "",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: any } }) => {
         const user = row.original;
         return (
           <div className="flex justify-end gap-2">
