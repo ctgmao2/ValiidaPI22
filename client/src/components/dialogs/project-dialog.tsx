@@ -63,16 +63,19 @@ export function ProjectDialog({
   };
 
   // Prepare the form values (with defaults for empty fields)
-  const formValues = mode === "edit" && projectData
-    ? { 
+  const formValues = (() => {
+    if (mode === "edit" && projectData) {
+      return { 
         ...projectData,
         // Convert nullable fields to empty strings if needed
         description: projectData.description || "",
         icon: projectData.icon || "",
         // Ensure proper type conversion for parentId
         parentId: projectData.parentId !== null ? projectData.parentId : null,
-      }
-    : defaultValues || {};
+      };
+    } 
+    return defaultValues || {};
+  })();
 
   // Simple console debug
   useEffect(() => {

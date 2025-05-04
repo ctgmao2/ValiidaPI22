@@ -54,9 +54,16 @@ export function ConfirmDeleteDialog({
       setOpen(false);
     },
     onError: (error: any) => {
+      // Check if it's a foreign key constraint error
+      const isForeignKeyError = error.message && 
+        (error.message.includes("foreign key constraint") || 
+         error.message.includes("violates foreign key"));
+      
       toast({
         title: "Error",
-        description: error.message || `Failed to delete ${resourceType}.`,
+        description: isForeignKeyError 
+          ? "It is not possible to delete this information, because it is related to other items"
+          : (error.message || `Failed to delete ${resourceType}.`),
         variant: "destructive",
       });
     },

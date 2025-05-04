@@ -63,8 +63,9 @@ export function TaskDialog({
   };
 
   // Prepare the form values (with defaults for empty fields)
-  const formValues = mode === "edit" && taskData
-    ? { 
+  const formValues = (() => {
+    if (mode === "edit" && taskData) {
+      return { 
         ...taskData,
         // Convert string dates to Date objects for the form
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
@@ -80,8 +81,10 @@ export function TaskDialog({
         assigneeId: taskData.assigneeId || null,
         reporterId: taskData.reporterId || null,
         parentTaskId: taskData.parentTaskId || null
-      }
-    : defaultValues || {} as Record<string, any>;
+      };
+    }
+    return defaultValues || {} as Record<string, any>;
+  })();
 
   // Simple console debug
   useEffect(() => {
