@@ -20,13 +20,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReactNode, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -35,9 +30,10 @@ import { apiRequest } from "@/lib/queryClient";
 const userSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  email: z.string().email("Invalid email address"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email"),
   role: z.string().optional(),
+  bio: z.string().optional(),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
@@ -65,19 +61,24 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
     resolver: zodResolver(userSchema),
     defaultValues: {
       username: "",
-      password: "",
-      name: "",
+      password: mode === "create" ? "" : undefined,
       email: "",
-      role: "member"
+      name: "",
+      role: "",
+      bio: "",
     }
   });
 
   // Update form values when user data is loaded
   useEffect(() => {
     if (mode === "edit" && userData) {
-      // In edit mode, password is optional
-      const { password, ...restData } = userData as any;
-      form.reset(restData);
+      form.reset({
+        username: (userData as any).username,
+        email: (userData as any).email || "",
+        name: (userData as any).name || "",
+        role: (userData as any).role || "",
+        bio: (userData as any).bio || "",
+      });
     }
   }, [form, userData, mode]);
 
@@ -106,7 +107,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   // Update user mutation
   const updateUserMutation = useMutation({
     mutationFn: async (data: UserFormValues) => {
-      // If password is empty, remove it from the payload
+      // Don't send empty password in updates
       if (!data.password) {
         const { password, ...restData } = data;
         return apiRequest("PATCH", `/api/users/${userId}`, restData);
@@ -152,9 +153,9 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        {trigger || <Button>{mode === "create" ? "Add User" : "Edit User"}</Button>}
+        {trigger || <Button>{mode === "create" ? "Create User" : "Edit User"}</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Create New User" : "Edit User"}
@@ -162,7 +163,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
           <DialogDescription>
             {mode === "create"
               ? "Add a new user to the system."
-              : "Update user account details."}
+              : "Update user information and settings."}
           </DialogDescription>
         </DialogHeader>
         
@@ -180,7 +181,61 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter username" {...field} />
+                      <Input placeholder="Username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {mode === "create" && (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {mode === "edit" && (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Change Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Leave blank to keep current password" 
+                          {...field} 
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Leave blank to keep current password
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -194,45 +249,8 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter full name" {...field} />
+                      <Input placeholder="Full Name" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{mode === "create" ? "Password" : "New Password"}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={mode === "create" ? "Enter password" : "Enter new password to change"}
-                        {...field}
-                      />
-                    </FormControl>
-                    {mode === "edit" && (
-                      <FormDescription>
-                        Leave empty to keep current password
-                      </FormDescription>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -244,22 +262,37 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
+                          <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="admin">Administrator</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="manager">Manager</SelectItem>
                         <SelectItem value="member">Member</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Brief description" 
+                        rows={3} 
+                        {...field} 
+                        value={field.value || ""}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -277,7 +310,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
                   type="submit"
                   disabled={createUserMutation.isPending || updateUserMutation.isPending}
                 >
-                  {mode === "create" ? "Create User" : "Update User"}
+                  {mode === "create" ? "Create" : "Save Changes"}
                 </Button>
               </div>
             </form>

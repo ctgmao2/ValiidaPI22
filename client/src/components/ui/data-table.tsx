@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -6,157 +6,76 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+} from '@/components/ui/table';
+import { InboxIcon } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface DataTableProps<TData> {
+interface DataTableProps<T> {
   columns: {
     accessorKey?: string;
     id?: string;
     header: string;
-    cell?: ({ row }: { row: { original: TData } }) => React.ReactNode;
+    cell?: ({ row }: { row: { original: T } }) => React.ReactNode;
   }[];
-  data: TData[];
+  data: T[];
   emptyMessage?: string;
-  pageSize?: number;
-  paginationOptions?: number[];
+  isLoading?: boolean;
 }
 
-export function DataTable<TData>({
+export function DataTable<T>({
   columns,
   data,
-  emptyMessage = "No data available",
-  pageSize: initialPageSize = 10,
-  paginationOptions = [5, 10, 20, 50, 100],
-}: DataTableProps<TData>) {
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+  emptyMessage = 'No data found',
+  isLoading = false,
+}: DataTableProps<T>) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
+        <p className="text-sm text-muted-foreground">Loading data...</p>
+      </div>
+    );
+  }
 
-  // Reset page index when data changes
-  useEffect(() => {
-    setPageIndex(0);
-  }, [data]);
-
-  // Calculate pagination
-  const pageCount = Math.ceil(data.length / pageSize);
-  const pageStart = pageIndex * pageSize;
-  const pageEnd = Math.min(pageStart + pageSize, data.length);
-  const currentPageData = data.slice(pageStart, pageEnd);
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <InboxIcon className="h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+        <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-md overflow-hidden border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column, i) => (
-                <TableHead key={column.id || column.accessorKey || i}>
-                  {column.header}
-                </TableHead>
-              ))}
+    <ScrollArea className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map((column) => (
+              <TableHead key={column.id || column.accessorKey || column.header}>
+                {column.header}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((row, rowIndex) => (
+            <TableRow key={rowIndex}>
+              {columns.map((column) => {
+                const key = column.id || column.accessorKey || column.header;
+                return (
+                  <TableCell key={key}>
+                    {column.cell
+                      ? column.cell({ row: { original: row } })
+                      : column.accessorKey &&
+                        (row as any)[column.accessorKey]?.toString()}
+                  </TableCell>
+                );
+              })}
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentPageData.length > 0 ? (
-              currentPageData.map((row, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {columns.map((column, columnIndex) => (
-                    <TableCell key={column.id || column.accessorKey || columnIndex}>
-                      {column.cell
-                        ? column.cell({ row: { original: row } })
-                        : column.accessorKey
-                        ? (row as any)[column.accessorKey]
-                        : null}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  {emptyMessage}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {data.length > 0 && (
-        <div className="flex items-center justify-between space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Showing {pageStart + 1} to {pageEnd} of {data.length} entries
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Rows per page</p>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(val) => setPageSize(Number(val))}
-              >
-                <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={pageSize} />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {paginationOptions.map((opt) => (
-                    <SelectItem key={opt} value={opt.toString()}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPageIndex(0)}
-                disabled={pageIndex === 0}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPageIndex(pageIndex - 1)}
-                disabled={pageIndex === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-1">
-                <Input
-                  className="h-8 w-[50px] text-center"
-                  value={pageIndex + 1}
-                  onChange={(e) => {
-                    const page = e.target.value ? Number(e.target.value) - 1 : 0;
-                    setPageIndex(page < 0 ? 0 : page >= pageCount ? pageCount - 1 : page);
-                  }}
-                />
-                <span className="text-sm text-muted-foreground">of {pageCount}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPageIndex(pageIndex + 1)}
-                disabled={pageIndex === pageCount - 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPageIndex(pageCount - 1)}
-                disabled={pageIndex === pageCount - 1}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          ))}
+        </TableBody>
+      </Table>
+    </ScrollArea>
   );
 }

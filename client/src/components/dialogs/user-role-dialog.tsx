@@ -18,31 +18,27 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ReactNode, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const roleSchema = z.object({
-  role: z.string().min(1, "Role is required"),
+  role: z.enum(["admin", "manager", "member"], {
+    required_error: "Please select a role",
+  }),
 });
 
 type RoleFormValues = z.infer<typeof roleSchema>;
 
 interface UserRoleDialogProps {
   userId: number;
-  currentRole?: string;
+  currentRole: string;
   trigger?: ReactNode;
 }
 
-export function UserRoleDialog({ userId, currentRole = "member", trigger }: UserRoleDialogProps) {
+export function UserRoleDialog({ userId, currentRole, trigger }: UserRoleDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,8 +47,8 @@ export function UserRoleDialog({ userId, currentRole = "member", trigger }: User
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleSchema),
     defaultValues: {
-      role: currentRole,
-    },
+      role: (currentRole as "admin" | "manager" | "member") || "member",
+    }
   });
 
   // Update role mutation
@@ -62,6 +58,8 @@ export function UserRoleDialog({ userId, currentRole = "member", trigger }: User
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", userId] });
+      
       toast({
         title: "Success",
         description: "User role updated successfully.",
@@ -83,40 +81,55 @@ export function UserRoleDialog({ userId, currentRole = "member", trigger }: User
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || <Button>Change Role</Button>}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Change User Role</DialogTitle>
           <DialogDescription>
-            Update the permission level for this user.
+            Changing a user's role will affect their permissions and access to features.
           </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
             <FormField
               control={form.control}
               name="role"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="member">Member</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <FormItem className="space-y-3">
+                  <FormLabel>User Role</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="admin" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Admin - Full access to all features and settings
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="manager" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Manager - Can manage projects and teams, but limited admin access
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="member" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Member - Basic access to assigned projects and tasks
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -134,7 +147,7 @@ export function UserRoleDialog({ userId, currentRole = "member", trigger }: User
                 type="submit"
                 disabled={updateRoleMutation.isPending}
               >
-                Update Role
+                Save Changes
               </Button>
             </div>
           </form>

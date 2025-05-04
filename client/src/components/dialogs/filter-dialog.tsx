@@ -5,7 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -14,316 +13,263 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ReactNode, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { format } from "date-fns";
-import { CalendarIcon, XCircle } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-
-interface FilterDialogProps {
-  resourceType: "user" | "project" | "task" | "team";
-  statusOptions: Array<{ label: string; value: string }>;
-  trigger?: ReactNode;
-  onApplyFilters: (filters: FilterFormValues) => void;
-}
 
 const filterSchema = z.object({
-  name: z.string().optional(),
-  status: z.array(z.string()).optional(),
-  fromDate: z.date().optional(),
-  toDate: z.date().optional(),
-  assignedTo: z.string().optional(),
+  searchTerm: z.string().optional(),
+  status: z.string().optional(),
   priority: z.string().optional(),
+  assignee: z.string().optional(),
+  dueDate: z.string().optional(),
+  showCompleted: z.boolean().optional(),
+  showOverdue: z.boolean().optional(),
 });
 
 type FilterFormValues = z.infer<typeof filterSchema>;
 
-export function FilterDialog({
-  resourceType,
-  statusOptions,
-  trigger,
-  onApplyFilters,
-}: FilterDialogProps) {
-  const [open, setOpen] = useState(false);
+interface FilterDialogProps {
+  onFilter: (filters: FilterFormValues) => void;
+  trigger?: ReactNode;
+  filterType: "projects" | "tasks" | "users";
+  defaultValues?: FilterFormValues;
+}
 
+export function FilterDialog({ onFilter, trigger, filterType, defaultValues }: FilterDialogProps) {
+  const [open, setOpen] = useState(false);
+  
+  // Define field options based on filter type
+  const statusOptions = 
+    filterType === "projects" 
+      ? ["active", "completed", "on-hold", "cancelled"] 
+      : filterType === "tasks"
+      ? ["not-started", "in-progress", "review", "completed", "blocked"]
+      : ["active", "inactive", "pending"];
+      
+  const priorityOptions = 
+    filterType === "tasks" 
+      ? ["low", "medium", "high", "critical"] 
+      : [];
+
+  // Create form with validation
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: {
-      name: "",
-      status: [],
-      fromDate: undefined,
-      toDate: undefined,
-      assignedTo: "",
+    defaultValues: defaultValues || {
+      searchTerm: "",
+      status: "",
       priority: "",
+      assignee: "",
+      dueDate: "",
+      showCompleted: true,
+      showOverdue: true,
     },
   });
 
   function onSubmit(data: FilterFormValues) {
-    onApplyFilters(data);
+    onFilter(data);
     setOpen(false);
   }
 
-  function resetFilters() {
+  function handleReset() {
     form.reset({
-      name: "",
-      status: [],
-      fromDate: undefined,
-      toDate: undefined,
-      assignedTo: "",
+      searchTerm: "",
+      status: "",
       priority: "",
+      assignee: "",
+      dueDate: "",
+      showCompleted: true,
+      showOverdue: true,
+    });
+    
+    onFilter({
+      searchTerm: "",
+      status: "",
+      priority: "",
+      assignee: "",
+      dueDate: "",
+      showCompleted: true,
+      showOverdue: true,
     });
   }
-
-  const resourceTypeLabel = 
-    resourceType === "user" ? "user" :
-    resourceType === "project" ? "project" :
-    resourceType === "task" ? "task" : "team";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Filter {resourceTypeLabel}s</DialogTitle>
+          <DialogTitle>
+            Filter {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+          </DialogTitle>
           <DialogDescription>
-            Apply filters to narrow down your search
+            Set filter criteria to narrow down your results.
           </DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
-              name="name"
+              name="searchTerm"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name/Title</FormLabel>
+                  <FormLabel>Search</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder={`Filter by ${resourceTypeLabel} name`}
-                      {...field}
-                      value={field.value || ""}
-                    />
+                    <Input placeholder="Search by name, title, description..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="status"
-              render={() => (
-                <FormItem>
-                  <div className="mb-4">
+            {statusOptions.length > 0 && (
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <FormDescription>
-                      Select the statuses you want to include
-                    </FormDescription>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {statusOptions.map((option) => (
-                      <FormField
-                        key={option.value}
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={option.value}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(option.value)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([
-                                          ...(field.value || []),
-                                          option.value,
-                                        ])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== option.value
-                                          )
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                {option.label}
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {resourceType === "task" && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="fromDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>From Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Select date</span>
-                                )}
-                                <div className="ml-auto flex">
-                                  {field.value && (
-                                    <XCircle
-                                      className="h-4 w-4 mr-1 opacity-70 cursor-pointer"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        field.onChange(undefined);
-                                      }}
-                                    />
-                                  )}
-                                  <CalendarIcon className="h-4 w-4 opacity-50" />
-                                </div>
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="toDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>To Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Select date</span>
-                                )}
-                                <div className="ml-auto flex">
-                                  {field.value && (
-                                    <XCircle
-                                      className="h-4 w-4 mr-1 opacity-70 cursor-pointer"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        field.onChange(undefined);
-                                      }}
-                                    />
-                                  )}
-                                  <CalendarIcon className="h-4 w-4 opacity-50" />
-                                </div>
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select priority" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Any status</SelectItem>
+                        {statusOptions.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
             
-            <DialogFooter className="pt-4 flex justify-between sm:justify-between gap-2">
-              <Button type="button" variant="outline" onClick={resetFilters}>
+            {filterType === "tasks" && (
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Any priority</SelectItem>
+                        {priorityOptions.map((priority) => (
+                          <SelectItem key={priority} value={priority}>
+                            {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {filterType === "tasks" && (
+              <FormField
+                control={form.control}
+                name="assignee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assignee</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filter by assignee" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Any assignee</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        <SelectItem value="me">Assigned to me</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {(filterType === "projects" || filterType === "tasks") && (
+              <FormField
+                control={form.control}
+                name="showCompleted"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Show Completed</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {filterType === "tasks" && (
+              <FormField
+                control={form.control}
+                name="showOverdue"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Show Overdue</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            <div className="flex justify-between space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleReset}
+              >
                 Reset Filters
               </Button>
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="submit">Apply Filters</Button>
+                <Button type="submit">
+                  Apply Filters
+                </Button>
               </div>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>
