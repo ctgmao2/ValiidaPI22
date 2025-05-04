@@ -76,7 +76,7 @@ export function UserDialog({ mode, userId, trigger }: UserDialogProps) {
   useEffect(() => {
     if (mode === "edit" && userData) {
       // In edit mode, password is optional
-      const { password, ...restData } = userData;
+      const { password, ...restData } = userData as any;
       form.reset(restData);
     }
   }, [form, userData, mode]);

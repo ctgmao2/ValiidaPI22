@@ -34,7 +34,7 @@ export default function Admin() {
     {
       accessorKey: "username",
       header: "Username",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: any } }) => {
         const user = row.original;
         return (
           <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function Admin() {
     {
       accessorKey: "role",
       header: "Role",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: any } }) => {
         const user = row.original;
         return (
           <Badge variant={
@@ -72,7 +72,7 @@ export default function Admin() {
     {
       accessorKey: "createdAt",
       header: "Created",
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: any } }) => {
         return row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString() : "N/A";
       },
     },

@@ -9,6 +9,7 @@ import Projects from "@/pages/projects";
 import Tasks from "@/pages/tasks";
 import Team from "@/pages/team";
 import Reports from "@/pages/reports";
+import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 import MobileNav from "@/components/layout/mobile-nav";
 import Footer from "@/components/layout/footer";
@@ -22,6 +23,7 @@ function AppRoutes() {
       <Route path="/tasks" component={Tasks} />
       <Route path="/team" component={Team} />
       <Route path="/reports" component={Reports} />
+      <Route path="/admin" component={Admin} />
       <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
