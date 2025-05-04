@@ -9,14 +9,17 @@ import {
   Search, 
   Filter, 
   Clock, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   CheckSquare,
   CircleDashed, 
   ListFilter,
   AlertTriangle,
   CheckCircle2,
   CircleAlert,
-  User
+  User,
+  List,
+  GanttChart,
+  Calendar
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -39,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskDialog } from "@/components/dialogs/task-dialog";
 
 export default function ProjectTasks() {
@@ -46,6 +50,7 @@ export default function ProjectTasks() {
   const [location] = useLocation();
   const projectId = location.startsWith('/projects/') ? parseInt(location.split('/')[2]) : null;
   const [filter, setFilter] = useState("all");
+  const [viewMode, setViewMode] = useState("list");
 
   const { data: project, isLoading: isLoadingProject, error: projectError } = useQuery<Project>({
     queryKey: projectId ? ['/api/projects', projectId] : ['disabled-query'],
@@ -205,14 +210,22 @@ export default function ProjectTasks() {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Advanced Filter
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <ListFilter className="h-4 w-4 mr-2" />
-                    Sort
-                  </Button>
+                  <Tabs value={viewMode} onValueChange={setViewMode} className="w-[300px]">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="list">
+                        <List className="h-4 w-4 mr-2" />
+                        List
+                      </TabsTrigger>
+                      <TabsTrigger value="gantt">
+                        <GanttChart className="h-4 w-4 mr-2" />
+                        Gantt
+                      </TabsTrigger>
+                      <TabsTrigger value="calendar">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Calendar
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
               </div>
             </CardHeader>
@@ -232,72 +245,219 @@ export default function ProjectTasks() {
                   />
                 </div>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[100px]">ID</TableHead>
-                        <TableHead>Task</TableHead>
-                        <TableHead className="w-[120px]">Status</TableHead>
-                        <TableHead className="w-[120px]">Priority</TableHead>
-                        <TableHead className="w-[150px]">Assignee</TableHead>
-                        <TableHead className="text-right w-[140px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTasks.map((task) => (
-                        <TableRow key={task.id}>
-                          <TableCell className="font-medium">#{task.id}</TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{task.title}</div>
-                              <div className="text-sm text-muted-foreground line-clamp-1">
-                                {task.description || "No description"}
+                <Tabs value={viewMode} className="w-full">
+                  <TabsContent value="list" className="mt-0">
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[100px]">ID</TableHead>
+                            <TableHead>Task</TableHead>
+                            <TableHead className="w-[120px]">Status</TableHead>
+                            <TableHead className="w-[120px]">Priority</TableHead>
+                            <TableHead className="w-[150px]">Assignee</TableHead>
+                            <TableHead className="text-right w-[140px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredTasks.map((task) => (
+                            <TableRow key={task.id}>
+                              <TableCell className="font-medium">#{task.id}</TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{task.title}</div>
+                                  <div className="text-sm text-muted-foreground line-clamp-1">
+                                    {task.description || "No description"}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(task.status)}
+                                  <span className="capitalize">
+                                    {task.status.replace(/-/g, ' ')}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                              <TableCell>
+                                {task.assigneeId ? (
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarFallback className="bg-primary/10 text-primary">
+                                        {task.assigneeId === 1 ? "JD" : "??"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>{task.assigneeId === 1 ? "John Doe" : "Assigned User"}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    <User className="h-4 w-4" />
+                                    <span>Unassigned</span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <TaskDialog
+                                  mode="edit"
+                                  taskId={task.id}
+                                  trigger={
+                                    <Button variant="ghost" size="sm">
+                                      View
+                                    </Button>
+                                  }
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="gantt" className="mt-0">
+                    <div className="p-6 border rounded-md">
+                      <div className="mb-6 flex items-center justify-between">
+                        <h3 className="text-lg font-medium">Gantt Chart View</h3>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm">
+                            <CalendarIcon className="h-4 w-4 mr-2" />
+                            Today
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            Zoom In
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            Zoom Out
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t">
+                        {/* Month Headers */}
+                        <div className="flex border-b">
+                          <div className="w-1/4 py-2 px-4 font-medium">Task</div>
+                          <div className="w-3/4 flex">
+                            {Array.from({ length: 6 }, (_, i) => {
+                              const date = new Date();
+                              date.setMonth(date.getMonth() + i);
+                              return (
+                                <div key={i} className="flex-1 py-2 px-2 text-center font-medium text-sm border-l">
+                                  {date.toLocaleString('default', { month: 'short' })} {date.getFullYear()}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        {/* Tasks with timeline bars */}
+                        {filteredTasks.map((task) => {
+                          // Generate random position and length for demo
+                          const startMonth = Math.floor(Math.random() * 3);
+                          const duration = Math.floor(Math.random() * 3) + 1;
+                          const statusColor = task.status === 'completed' ? 'bg-green-500' : 
+                                            task.status === 'in-progress' ? 'bg-blue-500' :
+                                            task.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-500';
+                          
+                          return (
+                            <div key={task.id} className="flex border-b hover:bg-gray-50">
+                              <div className="w-1/4 py-3 px-4">
+                                <div className="font-medium">{task.title}</div>
+                                <div className="text-xs text-muted-foreground">{task.status.replace(/-/g, ' ')}</div>
+                              </div>
+                              <div className="w-3/4 py-3 relative flex">
+                                {Array.from({ length: 6 }, (_, i) => (
+                                  <div key={i} className="flex-1 border-l"></div>
+                                ))}
+                                <div
+                                  className={`absolute h-5 rounded-full ${statusColor} top-1/2 -translate-y-1/2`}
+                                  style={{
+                                    left: `${(startMonth / 6) * 100}%`,
+                                    width: `${(duration / 6) * 100}%`,
+                                  }}
+                                >
+                                  <div className="px-2 h-full flex items-center justify-center text-white text-xs font-medium">
+                                    {task.title}
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(task.status)}
-                              <span className="capitalize">
-                                {task.status.replace(/-/g, ' ')}
-                              </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="calendar" className="mt-0">
+                    <div className="p-6 border rounded-md">
+                      <div className="mb-6 flex items-center justify-between">
+                        <h3 className="text-lg font-medium">Calendar View</h3>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm">
+                            <CalendarIcon className="h-4 w-4 mr-2" />
+                            Today
+                          </Button>
+                          <div className="flex border rounded-md">
+                            <Button variant="ghost" size="sm" className="rounded-none border-r">
+                              Month
+                            </Button>
+                            <Button variant="ghost" size="sm" className="rounded-none border-r">
+                              Week
+                            </Button>
+                            <Button variant="ghost" size="sm" className="rounded-none">
+                              Day
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-7 gap-px bg-gray-200 border rounded-md overflow-hidden">
+                        {/* Day header */}
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
+                          <div key={i} className="bg-white p-2 text-center font-medium">
+                            {day}
+                          </div>
+                        ))}
+                        
+                        {/* Calendar cells */}
+                        {Array.from({ length: 35 }, (_, i) => {
+                          const date = new Date();
+                          const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+                          const startingDay = firstDay.getDay();
+                          const monthLength = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                          
+                          const day = i - startingDay + 1;
+                          const isCurrentMonth = day > 0 && day <= monthLength;
+                          const isToday = day === date.getDate() && isCurrentMonth;
+                          
+                          // Randomly assign tasks to dates
+                          const hasTasks = isCurrentMonth && Math.random() > 0.7;
+                          
+                          return (
+                            <div 
+                              key={i} 
+                              className={`bg-white min-h-[100px] p-2 ${isToday ? 'ring-2 ring-primary' : ''} ${!isCurrentMonth ? 'opacity-50' : ''}`}
+                            >
+                              <div className="font-medium text-right">{isCurrentMonth ? day : ''}</div>
+                              {hasTasks && (
+                                <div className="mt-1">
+                                  <div className="bg-blue-100 p-1 text-xs rounded mb-1 border-l-2 border-blue-500">
+                                    Task #{Math.floor(Math.random() * filteredTasks.length) + 1}
+                                  </div>
+                                  {Math.random() > 0.5 && (
+                                    <div className="bg-green-100 p-1 text-xs rounded border-l-2 border-green-500">
+                                      Another task
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          </TableCell>
-                          <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                          <TableCell>
-                            {task.assigneeId ? (
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarFallback className="bg-primary/10 text-primary">
-                                    {task.assigneeId === 1 ? "JD" : "??"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span>{task.assigneeId === 1 ? "John Doe" : "Assigned User"}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <User className="h-4 w-4" />
-                                <span>Unassigned</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <TaskDialog
-                              mode="edit"
-                              taskId={task.id}
-                              trigger={
-                                <Button variant="ghost" size="sm">
-                                  View
-                                </Button>
-                              }
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               )}
             </CardContent>
           </Card>
