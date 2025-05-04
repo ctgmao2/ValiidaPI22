@@ -4,7 +4,42 @@ import { storage } from "./storage";
 import { insertUserSchema, insertProjectSchema, insertTaskSchema, insertActivitySchema } from "@shared/schema";
 import { z } from "zod";
 
+// Login schema
+const loginSchema = z.object({
+  username: z.string().min(3),
+  password: z.string().min(6),
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const validation = loginSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid credentials format", 
+          details: validation.error.format() 
+        });
+      }
+      
+      const { username, password } = validation.data;
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+      
+      // Don't return password in response
+      const { password: _, ...userWithoutPassword } = user;
+      
+      return res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Login error:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
   // User routes
   app.get("/api/users", async (req: Request, res: Response) => {
     const users = await storage.getAllUsers();

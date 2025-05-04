@@ -22,6 +22,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
   const [location] = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const navLinks = [
     { href: '/', label: 'Dashboard', icon: Home },
@@ -87,11 +88,24 @@ export default function Header() {
 
         <div className="ml-auto flex items-center space-x-2">
           <AccessibilityPanel />
-          <Link href="/login">
-            <Button size="sm" className="ml-4">
-              Sign In
-            </Button>
-          </Link>
+          
+          {isAuthenticated ? (
+            <div className="flex items-center ml-4">
+              <div className="mr-3 text-sm">
+                <div className="font-medium">{user?.fullName || user?.username}</div>
+                <div className="text-xs text-muted-foreground">{user?.role || 'User'}</div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={logout} title="Sign out">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login">
+              <Button size="sm" className="ml-4">
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
