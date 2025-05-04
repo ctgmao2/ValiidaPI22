@@ -85,11 +85,11 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
   useEffect(() => {
     if (mode === "edit" && teamData) {
       form.reset({
-        name: teamData.name,
-        description: teamData.description || "",
-        icon: teamData.icon || "",
-        memberIds: teamData.memberIds || [],
-        leaderId: teamData.leaderId,
+        name: (teamData as any).name,
+        description: (teamData as any).description || "",
+        icon: (teamData as any).icon || "",
+        memberIds: (teamData as any).memberIds || [],
+        leaderId: (teamData as any).leaderId,
       });
     }
   }, [form, teamData, mode]);
@@ -160,7 +160,7 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
   // Helper to get user name by ID
   const getUserName = (userId: number) => {
     if (!users) return `User #${userId}`;
-    const user = users.find((u: any) => u.id === userId);
+    const user = (users as any[]).find((u: any) => u.id === userId);
     return user ? (user.name || user.username) : `User #${userId}`;
   };
 
@@ -257,7 +257,7 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
               
               <div className="space-y-2">
                 <FormLabel>Team Members</FormLabel>
-                {users && users.length > 0 ? (
+                {users && (users as any[]).length > 0 ? (
                   <Select
                     onValueChange={(value) => addMember(Number(value))}
                   >
@@ -265,7 +265,7 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
                       <SelectValue placeholder="Add team members" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((user: any) => (
+                      {(users as any[]).map((user: any) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
                           {user.name || user.username}
                         </SelectItem>
@@ -294,7 +294,10 @@ export function TeamDialog({ mode, teamId, trigger }: TeamDialogProps) {
                   render={({ field }) => (
                     <FormItem className="hidden">
                       <FormControl>
-                        <Input {...field} />
+                        <Input type="hidden" value={field.value?.join(',')} onChange={(e) => {
+                          const values = e.target.value ? e.target.value.split(',').map(Number) : [];
+                          field.onChange(values);
+                        }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -1,7 +1,3 @@
-import { useState, ReactNode } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +5,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -19,6 +20,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { ReactNode, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -26,401 +30,300 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { X, Filter, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { CalendarIcon, XCircle } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarInput } from "@/components/ui/calendar-input";
-
-// Filter schema
-const filterSchema = z.object({
-  searchTerm: z.string().optional(),
-  status: z.array(z.string()).optional(),
-  priority: z.array(z.string()).optional(),
-  assignedToMe: z.boolean().optional(),
-  startDate: z.date().optional().nullable(),
-  dueDate: z.date().optional().nullable(),
-  projectIds: z.array(z.string()).optional(),
-  customFields: z.record(z.string(), z.string()).optional(),
-});
-
-type FilterValues = z.infer<typeof filterSchema>;
-
-interface FilterOption {
-  label: string;
-  value: string;
-}
 
 interface FilterDialogProps {
-  resourceType: "task" | "project" | "user";
+  resourceType: "user" | "project" | "task" | "team";
+  statusOptions: Array<{ label: string; value: string }>;
   trigger?: ReactNode;
-  statusOptions?: FilterOption[];
-  priorityOptions?: FilterOption[];
-  projectOptions?: FilterOption[];
-  customFieldOptions?: {
-    id: string;
-    name: string;
-    options?: FilterOption[];
-  }[];
-  initialFilters?: FilterValues;
-  onApplyFilters: (filters: FilterValues) => void;
+  onApplyFilters: (filters: FilterFormValues) => void;
 }
+
+const filterSchema = z.object({
+  name: z.string().optional(),
+  status: z.array(z.string()).optional(),
+  fromDate: z.date().optional(),
+  toDate: z.date().optional(),
+  assignedTo: z.string().optional(),
+  priority: z.string().optional(),
+});
+
+type FilterFormValues = z.infer<typeof filterSchema>;
 
 export function FilterDialog({
   resourceType,
+  statusOptions,
   trigger,
-  statusOptions = [],
-  priorityOptions = [],
-  projectOptions = [],
-  customFieldOptions = [],
-  initialFilters,
   onApplyFilters,
 }: FilterDialogProps) {
   const [open, setOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
-  const form = useForm<FilterValues>({
+  const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: initialFilters || {
-      searchTerm: "",
+    defaultValues: {
+      name: "",
       status: [],
-      priority: [],
-      assignedToMe: false,
-      startDate: null,
-      dueDate: null,
-      projectIds: [],
-      customFields: {},
+      fromDate: undefined,
+      toDate: undefined,
+      assignedTo: "",
+      priority: "",
     },
   });
 
-  const getResourceLabel = () => {
-    switch (resourceType) {
-      case "task":
-        return "tasks";
-      case "project":
-        return "projects";
-      case "user":
-        return "users";
-      default:
-        return "items";
-    }
-  };
-
-  const updateActiveFilters = (values: FilterValues) => {
-    const filters: string[] = [];
-    
-    if (values.searchTerm) filters.push("Search");
-    if (values.status && values.status.length > 0) filters.push("Status");
-    if (values.priority && values.priority.length > 0) filters.push("Priority");
-    if (values.assignedToMe) filters.push("Assigned to me");
-    if (values.startDate) filters.push("Start date");
-    if (values.dueDate) filters.push("Due date");
-    if (values.projectIds && values.projectIds.length > 0) filters.push("Projects");
-    
-    // Add custom fields that have values
-    if (values.customFields) {
-      Object.entries(values.customFields).forEach(([key, value]) => {
-        if (value) {
-          const field = customFieldOptions.find(option => option.id === key);
-          if (field) filters.push(field.name);
-        }
-      });
-    }
-    
-    setActiveFilters(filters);
-  };
-
-  const onSubmit = (values: FilterValues) => {
-    updateActiveFilters(values);
-    onApplyFilters(values);
+  function onSubmit(data: FilterFormValues) {
+    onApplyFilters(data);
     setOpen(false);
-  };
+  }
 
-  const resetForm = () => {
+  function resetFilters() {
     form.reset({
-      searchTerm: "",
+      name: "",
       status: [],
-      priority: [],
-      assignedToMe: false,
-      startDate: null,
-      dueDate: null,
-      projectIds: [],
-      customFields: {},
+      fromDate: undefined,
+      toDate: undefined,
+      assignedTo: "",
+      priority: "",
     });
-    setActiveFilters([]);
-    onApplyFilters({});
-  };
+  }
+
+  const resourceTypeLabel = 
+    resourceType === "user" ? "user" :
+    resourceType === "project" ? "project" :
+    resourceType === "task" ? "task" : "team";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="h-4 w-4" />
-            <span>Filter</span>
-            {activeFilters.length > 0 && (
-              <Badge variant="secondary" className="ml-1 px-1 rounded-full">
-                {activeFilters.length}
-              </Badge>
-            )}
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filter {getResourceLabel()}
-          </DialogTitle>
+          <DialogTitle>Filter {resourceTypeLabel}s</DialogTitle>
           <DialogDescription>
-            Apply filters to narrow down the list of {getResourceLabel()}.
+            Apply filters to narrow down your search
           </DialogDescription>
         </DialogHeader>
-
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
-              name="searchTerm"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Search</FormLabel>
+                  <FormLabel>Name/Title</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={`Search ${getResourceLabel()} by name or keyword`}
+                      placeholder={`Filter by ${resourceTypeLabel} name`}
                       {...field}
                       value={field.value || ""}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
-
-            {statusOptions.length > 0 && (
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
+            
+            <FormField
+              control={form.control}
+              name="status"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
                     <FormLabel>Status</FormLabel>
-                    <div className="flex flex-wrap gap-2">
-                      {statusOptions.map((option) => (
-                        <Badge
-                          key={option.value}
-                          variant={field.value?.includes(option.value) ? "default" : "outline"}
-                          className={cn(
-                            "cursor-pointer hover:opacity-80 transition-all",
-                            field.value?.includes(option.value)
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-transparent"
-                          )}
-                          onClick={() => {
-                            const currentValues = field.value || [];
-                            const newValues = currentValues.includes(option.value)
-                              ? currentValues.filter((val) => val !== option.value)
-                              : [...currentValues, option.value];
-                            field.onChange(newValues);
-                          }}
-                        >
-                          {option.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {priorityOptions.length > 0 && (
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <div className="flex flex-wrap gap-2">
-                      {priorityOptions.map((option) => (
-                        <Badge
-                          key={option.value}
-                          variant={field.value?.includes(option.value) ? "default" : "outline"}
-                          className={cn(
-                            "cursor-pointer hover:opacity-80 transition-all",
-                            field.value?.includes(option.value)
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-transparent"
-                          )}
-                          onClick={() => {
-                            const currentValues = field.value || [];
-                            const newValues = currentValues.includes(option.value)
-                              ? currentValues.filter((val) => val !== option.value)
-                              : [...currentValues, option.value];
-                            field.onChange(newValues);
-                          }}
-                        >
-                          {option.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {resourceType === "task" && (
-              <FormField
-                control={form.control}
-                name="assignedToMe"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Assigned to me</FormLabel>
-                      <FormDescription>
-                        Only show tasks that are assigned to you
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <FormControl>
-                      <CalendarInput
-                        date={field.value}
-                        setDate={field.onChange}
-                        placeholder="Filter by start date"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due Date</FormLabel>
-                    <FormControl>
-                      <CalendarInput
-                        date={field.value}
-                        setDate={field.onChange}
-                        placeholder="Filter by due date"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {resourceType === "task" && projectOptions.length > 0 && (
-              <FormField
-                control={form.control}
-                name="projectIds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Projects</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        const currentValues = field.value || [];
-                        if (!currentValues.includes(value)) {
-                          field.onChange([...currentValues, value]);
-                        }
-                      }}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select projects" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {projectOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {field.value && field.value.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {field.value.map((projectId) => {
-                          const project = projectOptions.find(
-                            (p) => p.value === projectId
-                          );
+                    <FormDescription>
+                      Select the statuses you want to include
+                    </FormDescription>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {statusOptions.map((option) => (
+                      <FormField
+                        key={option.value}
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => {
                           return (
-                            <Badge
-                              key={projectId}
-                              variant="secondary"
-                              className="flex items-center gap-1"
+                            <FormItem
+                              key={option.value}
+                              className="flex flex-row items-start space-x-3 space-y-0"
                             >
-                              {project?.label || projectId}
-                              <X
-                                className="h-3 w-3 cursor-pointer"
-                                onClick={() => {
-                                  field.onChange(
-                                    field.value?.filter((id) => id !== projectId) || []
-                                  );
-                                }}
-                              />
-                            </Badge>
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(option.value)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([
+                                          ...(field.value || []),
+                                          option.value,
+                                        ])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== option.value
+                                          )
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                {option.label}
+                              </FormLabel>
+                            </FormItem>
                           );
-                        })}
-                      </div>
-                    )}
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {customFieldOptions.length > 0 && (
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {resourceType === "task" && (
               <>
-                <Separator />
-                <h3 className="text-sm font-medium">Custom Fields</h3>
-
-                {customFieldOptions.map((field) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
-                    key={field.id}
                     control={form.control}
-                    name={`customFields.${field.id}` as any}
-                    render={({ field: formField }) => (
-                      <FormItem>
-                        <FormLabel>{field.name}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={`Filter by ${field.name.toLowerCase()}`}
-                            {...formField}
-                            value={formField.value || ""}
-                          />
-                        </FormControl>
+                    name="fromDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>From Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Select date</span>
+                                )}
+                                <div className="ml-auto flex">
+                                  {field.value && (
+                                    <XCircle
+                                      className="h-4 w-4 mr-1 opacity-70 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        field.onChange(undefined);
+                                      }}
+                                    />
+                                  )}
+                                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                                </div>
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                ))}
+                  
+                  <FormField
+                    control={form.control}
+                    name="toDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>To Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Select date</span>
+                                )}
+                                <div className="ml-auto flex">
+                                  {field.value && (
+                                    <XCircle
+                                      className="h-4 w-4 mr-1 opacity-70 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        field.onChange(undefined);
+                                      }}
+                                    />
+                                  )}
+                                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                                </div>
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </>
             )}
-
-            <div className="flex justify-between pt-4">
-              <Button type="button" variant="outline" onClick={resetForm}>
+            
+            <DialogFooter className="pt-4 flex justify-between sm:justify-between gap-2">
+              <Button type="button" variant="outline" onClick={resetFilters}>
                 Reset Filters
               </Button>
-              <Button type="submit">Apply Filters</Button>
-            </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Apply Filters</Button>
+              </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

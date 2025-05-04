@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { UserDialog } from "@/components/dialogs/user-dialog";
 import { UserRoleDialog } from "@/components/dialogs/user-role-dialog";
+import { TeamDialog } from "@/components/dialogs/team-dialog";
+import { FilterDialog } from "@/components/dialogs/filter-dialog";
 import { ConfirmDeleteDialog } from "@/components/dialogs/confirm-delete-dialog";
 import { DataTable } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
@@ -162,10 +164,26 @@ export default function Admin() {
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
+              <FilterDialog
+                resourceType="user"
+                statusOptions={[
+                  { label: "Admin", value: "admin" },
+                  { label: "Manager", value: "manager" },
+                  { label: "Member", value: "member" }
+                ]}
+                onApplyFilters={(filters) => {
+                  console.log("Applied filters:", filters);
+                  // In a real implementation, we would:
+                  // 1. Store the filters in state
+                  // 2. Apply them to filter the users data
+                }}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                }
+              />
               <UserDialog
                 mode="create"
                 trigger={
@@ -222,14 +240,31 @@ export default function Admin() {
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Team
-              </Button>
+              <FilterDialog
+                resourceType="user"
+                statusOptions={[
+                  { label: "Active", value: "active" },
+                  { label: "Inactive", value: "inactive" }
+                ]}
+                onApplyFilters={(filters) => {
+                  console.log("Applied filters:", filters);
+                }}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                }
+              />
+              <TeamDialog
+                mode="create"
+                trigger={
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Team
+                  </Button>
+                }
+              />
             </div>
           </div>
 
