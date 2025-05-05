@@ -1,0 +1,70 @@
+name: project_management_app
+description: A dynamic project management web application that enhances team collaboration through intuitive task tracking and engaging user interactions.
+version: 1.0.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  
+  # State management and data handling
+  provider: ^6.1.1
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  
+  # UI components
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  intl: ^0.19.0
+  
+  # Charts and data visualization
+  fl_chart: ^0.65.0
+  syncfusion_flutter_charts: ^24.1.47
+  syncfusion_flutter_calendar: ^24.1.47
+  
+  # Navigation and routing
+  go_router: ^13.0.0
+  
+  # Authentication and security
+  flutter_secure_storage: ^9.0.0
+  jwt_decoder: ^2.0.1
+  
+  # Database
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  
+  # Form handling and validation
+  form_field_validator: ^1.1.0
+  
+  # Accessibility
+  flutter_localization: ^0.2.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.6
+  mockito: ^5.4.2
+  integration_test:
+    sdk: flutter
+    
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Roboto-Light.ttf
+          weight: 300
