@@ -1,82 +1,131 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:project_management_app/theme/app_theme.dart';
 
-class ThemeProvider extends ChangeNotifier {
+class ThemeProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
-  String _accentColor = '#4f46e5'; // Default indigo color
-
-  ThemeMode get themeMode => _themeMode;
-  String get accentColor => _accentColor;
+  String _colorSchemeName = 'blue';
+  bool _useMaterial3 = true;
+  double _borderRadius = 8.0;
+  String? _error;
   
-  // Getter for Color object from hex string
-  Color get primaryColor => _hexToColor(_accentColor);
-
+  // Getters
+  ThemeMode get themeMode => _themeMode;
+  String get colorSchemeName => _colorSchemeName;
+  bool get useMaterial3 => _useMaterial3;
+  double get borderRadius => _borderRadius;
+  String? get error => _error;
+  
+  // Get the current theme data
+  ThemeData getTheme(Brightness brightness) {
+    return AppTheme.getThemeData(
+      brightness: brightness, 
+      colorSchemeName: _colorSchemeName,
+      useMaterial3: _useMaterial3,
+      borderRadius: _borderRadius,
+    );
+  }
+  
+  // Constructor
   ThemeProvider() {
     _loadSettings();
   }
-
-  Color _hexToColor(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-    buffer.write(hexString.replaceFirst('#', ''));
-    return Color(int.parse(buffer.toString(), radix: 16));
-  }
-
+  
+  // Load settings from shared preferences
   Future<void> _loadSettings() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    
-    // Load theme mode
-    final String? themeModeString = prefs.getString('themeMode');
-    if (themeModeString != null) {
-      switch (themeModeString) {
-        case 'light':
-          _themeMode = ThemeMode.light;
-          break;
-        case 'dark':
-          _themeMode = ThemeMode.dark;
-          break;
-        default:
-          _themeMode = ThemeMode.system;
-      }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      final themeModeString = prefs.getString('theme_mode') ?? 'system';
+      _themeMode = _parseThemeMode(themeModeString);
+      
+      _colorSchemeName = prefs.getString('color_scheme') ?? 'blue';
+      _useMaterial3 = prefs.getBool('use_material3') ?? true;
+      _borderRadius = prefs.getDouble('border_radius') ?? 8.0;
+      
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to load theme settings: ${e.toString()}';
     }
-    
-    // Load accent color
-    final String? accentColorValue = prefs.getString('accentColor');
-    if (accentColorValue != null) {
-      _accentColor = accentColorValue;
-    }
-    
-    notifyListeners();
   }
-
-  Future<void> setThemeMode(ThemeMode mode) async {
-    _themeMode = mode;
-    
-    // Save to preferences
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    String themeModeString;
-    
-    switch (mode) {
-      case ThemeMode.light:
-        themeModeString = 'light';
-        break;
-      case ThemeMode.dark:
-        themeModeString = 'dark';
-        break;
-      default:
-        themeModeString = 'system';
+  
+  // Save settings to shared preferences
+  Future<void> _saveSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      await prefs.setString('theme_mode', _themeModeToString(_themeMode));
+      await prefs.setString('color_scheme', _colorSchemeName);
+      await prefs.setBool('use_material3', _useMaterial3);
+      await prefs.setDouble('border_radius', _borderRadius);
+    } catch (e) {
+      _error = 'Failed to save theme settings: ${e.toString()}';
     }
-    
-    await prefs.setString('themeMode', themeModeString);
+  }
+  
+  // Set theme mode (light, dark, system)
+  void setThemeMode(ThemeMode mode) {
+    _themeMode = mode;
+    _saveSettings();
     notifyListeners();
   }
   
-  Future<void> setAccentColor(String colorHex) async {
-    _accentColor = colorHex;
-    
-    // Save to preferences
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('accentColor', colorHex);
+  // Set color scheme name
+  void setColorScheme(String name) {
+    if (AppTheme.availableColorSchemes.contains(name)) {
+      _colorSchemeName = name;
+      _saveSettings();
+      notifyListeners();
+    }
+  }
+  
+  // Toggle Material 3
+  void toggleMaterial3() {
+    _useMaterial3 = !_useMaterial3;
+    _saveSettings();
     notifyListeners();
+  }
+  
+  // Set border radius
+  void setBorderRadius(double radius) {
+    _borderRadius = radius;
+    _saveSettings();
+    notifyListeners();
+  }
+  
+  // Reset all settings to defaults
+  void resetSettings() {
+    _themeMode = ThemeMode.system;
+    _colorSchemeName = 'blue';
+    _useMaterial3 = true;
+    _borderRadius = 8.0;
+    _saveSettings();
+    notifyListeners();
+  }
+  
+  // Helper methods
+  ThemeMode _parseThemeMode(String themeModeString) {
+    switch (themeModeString) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+      default:
+        return ThemeMode.system;
+    }
+  }
+  
+  String _themeModeToString(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+      case ThemeMode.system:
+      default:
+        return 'system';
+    }
   }
 }

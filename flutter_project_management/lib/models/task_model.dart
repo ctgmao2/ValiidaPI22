@@ -4,64 +4,70 @@ class Task {
   final String? description;
   final String status;
   final String priority;
-  final int progress;
-  final int? estimatedHours;
-  final int spentHours;
-  final DateTime? dueDate;
-  final DateTime? startDate;
-  final int? taskTypeId;
   final int projectId;
+  final String? projectName;
   final int? assigneeId;
-  final int? reporterId;
-  final int? parentTaskId;
-  final Map<String, dynamic>? customFields;
+  final String? assigneeName;
+  final DateTime? startDate;
+  final DateTime? dueDate;
+  final DateTime? completedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
-
+  final double? estimatedHours;
+  final double? actualHours;
+  final List<int>? dependsOn;
+  final Map<String, dynamic>? customFields;
+  
   Task({
     required this.id,
     required this.title,
     this.description,
     required this.status,
     required this.priority,
-    required this.progress,
-    this.estimatedHours,
-    required this.spentHours,
-    this.dueDate,
-    this.startDate,
-    this.taskTypeId,
     required this.projectId,
+    this.projectName,
     this.assigneeId,
-    this.reporterId,
-    this.parentTaskId,
-    this.customFields,
+    this.assigneeName,
+    this.startDate,
+    this.dueDate,
+    this.completedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.estimatedHours,
+    this.actualHours,
+    this.dependsOn,
+    this.customFields,
   });
-
+  
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
       id: json['id'],
       title: json['title'],
       description: json['description'],
-      status: json['status'],
-      priority: json['priority'],
-      progress: json['progress'] ?? 0,
-      estimatedHours: json['estimatedHours'],
-      spentHours: json['spentHours'] ?? 0,
-      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
-      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
-      taskTypeId: json['taskTypeId'],
+      status: json['status'] ?? 'new',
+      priority: json['priority'] ?? 'medium',
       projectId: json['projectId'],
+      projectName: json['projectName'],
       assigneeId: json['assigneeId'],
-      reporterId: json['reporterId'],
-      parentTaskId: json['parentTaskId'],
+      assigneeName: json['assigneeName'],
+      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
+      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null 
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      estimatedHours: json['estimatedHours']?.toDouble(),
+      actualHours: json['actualHours']?.toDouble(),
+      dependsOn: json['dependsOn'] != null
+          ? List<int>.from(json['dependsOn'])
+          : null,
       customFields: json['customFields'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
-
+  
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -69,41 +75,42 @@ class Task {
       'description': description,
       'status': status,
       'priority': priority,
-      'progress': progress,
-      'estimatedHours': estimatedHours,
-      'spentHours': spentHours,
-      'dueDate': dueDate?.toIso8601String(),
-      'startDate': startDate?.toIso8601String(),
-      'taskTypeId': taskTypeId,
       'projectId': projectId,
+      'projectName': projectName,
       'assigneeId': assigneeId,
-      'reporterId': reporterId,
-      'parentTaskId': parentTaskId,
-      'customFields': customFields,
+      'assigneeName': assigneeName,
+      'startDate': startDate?.toIso8601String(),
+      'dueDate': dueDate?.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'estimatedHours': estimatedHours,
+      'actualHours': actualHours,
+      'dependsOn': dependsOn,
+      'customFields': customFields,
     };
   }
-
+  
+  // Copy with method for creating a new instance with some updated properties
   Task copyWith({
     int? id,
     String? title,
     String? description,
     String? status,
     String? priority,
-    int? progress,
-    int? estimatedHours,
-    int? spentHours,
-    DateTime? dueDate,
-    DateTime? startDate,
-    int? taskTypeId,
     int? projectId,
+    String? projectName,
     int? assigneeId,
-    int? reporterId,
-    int? parentTaskId,
-    Map<String, dynamic>? customFields,
+    String? assigneeName,
+    DateTime? startDate,
+    DateTime? dueDate,
+    DateTime? completedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? estimatedHours,
+    double? actualHours,
+    List<int>? dependsOn,
+    Map<String, dynamic>? customFields,
   }) {
     return Task(
       id: id ?? this.id,
@@ -111,19 +118,19 @@ class Task {
       description: description ?? this.description,
       status: status ?? this.status,
       priority: priority ?? this.priority,
-      progress: progress ?? this.progress,
-      estimatedHours: estimatedHours ?? this.estimatedHours,
-      spentHours: spentHours ?? this.spentHours,
-      dueDate: dueDate ?? this.dueDate,
-      startDate: startDate ?? this.startDate,
-      taskTypeId: taskTypeId ?? this.taskTypeId,
       projectId: projectId ?? this.projectId,
+      projectName: projectName ?? this.projectName,
       assigneeId: assigneeId ?? this.assigneeId,
-      reporterId: reporterId ?? this.reporterId,
-      parentTaskId: parentTaskId ?? this.parentTaskId,
-      customFields: customFields ?? this.customFields,
+      assigneeName: assigneeName ?? this.assigneeName,
+      startDate: startDate ?? this.startDate,
+      dueDate: dueDate ?? this.dueDate,
+      completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      estimatedHours: estimatedHours ?? this.estimatedHours,
+      actualHours: actualHours ?? this.actualHours,
+      dependsOn: dependsOn ?? this.dependsOn,
+      customFields: customFields ?? this.customFields,
     );
   }
 }
