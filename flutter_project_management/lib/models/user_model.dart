@@ -2,68 +2,73 @@ class User {
   final int id;
   final String username;
   final String fullName;
-  final String? role;
-  final String initials;
-  final String avatarColor;
   final String? email;
-  final Map<String, dynamic>? preferences;
-
+  final String? role;
+  final String avatarColor;
+  final String initials;
+  
   User({
     required this.id,
     required this.username,
     required this.fullName,
-    this.role,
-    required this.initials,
-    required this.avatarColor,
     this.email,
-    this.preferences,
+    this.role,
+    required this.avatarColor,
+    required this.initials,
   });
-
+  
   factory User.fromJson(Map<String, dynamic> json) {
+    // Generate initials from full name
+    final nameParts = (json['fullName'] as String).split(' ');
+    final initials = nameParts.length > 1
+        ? '${nameParts[0][0]}${nameParts[1][0]}'
+        : nameParts[0].length > 1
+            ? nameParts[0].substring(0, 2)
+            : '${nameParts[0][0]}';
+    
+    // Generate a deterministic color based on the username
+    final colorIndex = json['username'].hashCode % avatarColors.length;
+    final avatarColor = json['avatarColor'] ?? avatarColors[colorIndex.abs()];
+    
     return User(
       id: json['id'],
       username: json['username'],
       fullName: json['fullName'],
-      role: json['role'],
-      initials: json['initials'],
-      avatarColor: json['avatarColor'],
       email: json['email'],
-      preferences: json['preferences'],
+      role: json['role'],
+      avatarColor: avatarColor,
+      initials: json['initials'] ?? initials.toUpperCase(),
     );
   }
-
+  
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'username': username,
       'fullName': fullName,
-      'role': role,
-      'initials': initials,
-      'avatarColor': avatarColor,
       'email': email,
-      'preferences': preferences,
+      'role': role,
+      'avatarColor': avatarColor,
+      'initials': initials,
     };
   }
-
-  User copyWith({
-    int? id,
-    String? username,
-    String? fullName,
-    String? role,
-    String? initials,
-    String? avatarColor,
-    String? email,
-    Map<String, dynamic>? preferences,
-  }) {
-    return User(
-      id: id ?? this.id,
-      username: username ?? this.username,
-      fullName: fullName ?? this.fullName,
-      role: role ?? this.role,
-      initials: initials ?? this.initials,
-      avatarColor: avatarColor ?? this.avatarColor,
-      email: email ?? this.email,
-      preferences: preferences ?? this.preferences,
-    );
-  }
 }
+
+// List of colors for user avatars
+const List<String> avatarColors = [
+  '#1abc9c', // Turquoise
+  '#2ecc71', // Emerald
+  '#3498db', // Peter River
+  '#9b59b6', // Amethyst
+  '#34495e', // Wet Asphalt
+  '#16a085', // Green Sea
+  '#27ae60', // Nephritis
+  '#2980b9', // Belize Hole
+  '#8e44ad', // Wisteria
+  '#2c3e50', // Midnight Blue
+  '#f1c40f', // Sunflower
+  '#e67e22', // Carrot
+  '#e74c3c', // Alizarin
+  '#d35400', // Pumpkin
+  '#c0392b', // Pomegranate
+];
